@@ -1,7 +1,7 @@
 import Foundation
 import XCTest
 
-@testable import FluidVoice_Debug
+@testable import FluidVoice_Local_Debug
 
 @MainActor
 final class DictationE2ETests: XCTestCase {

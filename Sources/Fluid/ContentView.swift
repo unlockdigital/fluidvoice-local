@@ -3813,11 +3813,8 @@ extension ContentView {
     }
 
     private var draggableAccessibilityAppURL: URL {
-        let installedURL = URL(fileURLWithPath: "/Applications/FluidVoice.app")
-        if FileManager.default.fileExists(atPath: installedURL.path) {
-            return installedURL
-        }
-        return Bundle.main.bundleURL
+        // Permission guidance always refers to the running candidate's identity.
+        Bundle.main.bundleURL
     }
 
     func restartApp() {
