@@ -1,4 +1,4 @@
-name: Hardened source checks
+name: FluidVoice Local source checks
 
 on:
   push:

@@ -4,7 +4,13 @@ set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 TARGET_APP="$HOME/Library/Input Methods/FluidVoice Direct Input.app"
-TARGET_BIN="$TARGET_APP/Contents/MacOS/FluidVoice Hardened"
+# Resolve the executable from metadata for both preserved and renamed candidates.
+TARGET_EXECUTABLE="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$TARGET_APP/Contents/Info.plist" 2>/dev/null || true)"
+case "$TARGET_EXECUTABLE" in
+  'FluidVoice Local'|'FluidVoice Hardened') ;;
+  *) echo "FAIL: Unexpected or missing direct-input executable identity."; exit 1 ;;
+esac
+TARGET_BIN="$TARGET_APP/Contents/MacOS/$TARGET_EXECUTABLE"
 GUARDIAN_LABEL="com.unlockdigital.fluidvoice-input-source-guardian"
 GUARDIAN_BIN="$HOME/Library/Application Support/FluidVoiceHardened/InputSourceGuardian/FluidVoiceInputSourceGuardian"
 GUARDIAN_SOURCE="$REPO_DIR/scripts/fluidvoice-input-source-guardian.swift"

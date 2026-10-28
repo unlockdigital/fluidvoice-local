@@ -1,11 +1,11 @@
 [CmdletBinding()]
 param(
-    [string]$InstallDirectory = (Join-Path $env:LOCALAPPDATA 'Programs\FluidVoice Hardened')
+    [string]$InstallDirectory = (Join-Path $env:LOCALAPPDATA 'Programs\FluidVoice Local')
 )
 
 $ErrorActionPreference = 'Stop'
 $installPath = [IO.Path]::GetFullPath($InstallDirectory)
-$executable = Join-Path $installPath 'FluidVoice Hardened.exe'
+$executable = Join-Path $installPath 'FluidVoice Local.exe'
 $model = Join-Path $installPath 'Models\ggml-large-v3-turbo-q5_0.bin'
 $policyFile = Join-Path $installPath 'secure-policy.json'
 $manifestFile = Join-Path $installPath 'integrity-manifest.json'
@@ -13,7 +13,7 @@ $expectedModelHash = '394221709cd5ad1f40c46e6031ca61bce88931e6e088c188294c6d5a55
 $expectedProductVersion = '1.2.0-win11'
 $expectedFileVersion = '1.2.0.14'
 $publishPath = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\.artifacts\publish'))
-$publishedExecutable = Join-Path $publishPath 'FluidVoice Hardened.exe'
+$publishedExecutable = Join-Path $publishPath 'FluidVoice Local.exe'
 $failures = [Collections.Generic.List[string]]::new()
 
 foreach ($required in @($executable, $model, $policyFile, $manifestFile)) {
@@ -92,15 +92,16 @@ $forbidden = 'HttpClient|HttpWebRequest|WebRequest|URLSession|PostHog|Process\.S
 $matches = $sourceFiles | Select-String -Pattern $forbidden -CaseSensitive
 if ($matches) { $failures.Add('Forbidden network, server, process, clipboard, or persistence API found in production source.') }
 
+# Compatibility: installation retains the existing startup value identity.
 $runValue = (Get-ItemProperty -LiteralPath 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run' -Name 'FluidVoiceHardened' -ErrorAction SilentlyContinue).FluidVoiceHardened
 if ($runValue -notlike "*$executable*") { $failures.Add('Launch-at-login entry is missing or points elsewhere.') }
 
-$listeners = Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue | Where-Object OwningProcess -in (Get-Process -Name 'FluidVoice Hardened' -ErrorAction SilentlyContinue).Id
-if ($listeners) { $failures.Add('FluidVoice owns a TCP listening socket.') }
+$listeners = Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue | Where-Object OwningProcess -in (Get-Process -Name 'FluidVoice Local' -ErrorAction SilentlyContinue).Id
+if ($listeners) { $failures.Add('FluidVoice Local owns a TCP listening socket.') }
 $port47733 = Get-NetTCPConnection -LocalPort 47733 -State Listen -ErrorAction SilentlyContinue
 if ($port47733) { $failures.Add('TCP port 47733 is open.') }
 
-$firewallRules = Get-NetFirewallRule -DisplayName 'FluidVoice Hardened - Block *' -ErrorAction SilentlyContinue
+$firewallRules = Get-NetFirewallRule -DisplayName 'FluidVoice Local - Block *' -ErrorAction SilentlyContinue
 $validFirewallDirections = @($firewallRules | Where-Object {
     $application = $_ | Get-NetFirewallApplicationFilter
     $program = [string]$application.Program
@@ -111,7 +112,7 @@ $validFirewallDirections = @($firewallRules | Where-Object {
     [IO.Path]::GetFullPath($program) -eq $executable
 } | ForEach-Object { [string]$_.Direction })
 if ($validFirewallDirections -notcontains 'Inbound' -or $validFirewallDirections -notcontains 'Outbound') {
-    $failures.Add('Exact inbound/outbound FluidVoice firewall block rules are missing.')
+    $failures.Add('Exact inbound/outbound FluidVoice Local firewall block rules are missing.')
 }
 
 if ($modelHash -eq $expectedModelHash) { Write-Output "MODEL_SHA256=PASS:$modelHash" }

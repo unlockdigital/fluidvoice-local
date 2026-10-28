@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Phase 9 runtime checks for FluidVoice Hardened.
+# Phase 9 runtime checks for FluidVoice Local.
 #
 # Run this AFTER launching the hardened app once and dictating the fake phrases (see
 # docs/CONTROLLED_TEST_PLAN.md). It automates every inspectable check:
@@ -125,11 +125,11 @@ fi
 # ---------------------------------------------------------------------------
 section "FluidAudio model SHA-256 manifest"
 APP_PATH="${FLUIDVOICE_APP_PATH:-}"
-if [ -z "$APP_PATH" ] && [ -d "/Applications/FluidVoice Hardened.app" ]; then
-  APP_PATH="/Applications/FluidVoice Hardened.app"
+if [ -z "$APP_PATH" ] && [ -d "/Applications/FluidVoice Local.app" ]; then
+  APP_PATH="/Applications/FluidVoice Local.app"
 fi
-if [ -z "$APP_PATH" ] && [ -d "$REPO_DIR/build/FluidVoice Hardened.app" ]; then
-  APP_PATH="$REPO_DIR/build/FluidVoice Hardened.app"
+if [ -z "$APP_PATH" ] && [ -d "$REPO_DIR/build/FluidVoice Local.app" ]; then
+  APP_PATH="$REPO_DIR/build/FluidVoice Local.app"
 fi
 MODEL_NAME="parakeet-tdt-0.6b-v2-coreml"
 MANIFEST="$APP_PATH/Contents/Resources/PreseededModels/$MODEL_NAME.manifest.json"

@@ -429,7 +429,7 @@ final class MenuBarManager: NSObject, ObservableObject, NSMenuDelegate {
 
         if DirectInputMethodRuntime.isEnabled {
             let restoreInputSourceMenuItem = NSMenuItem(
-                title: "Restore Fluid Voice Input Source",
+                title: "Restore FluidVoice Local Input Source",
                 action: #selector(restoreDirectInputSource(_:)),
                 keyEquivalent: ""
             )
@@ -441,7 +441,7 @@ final class MenuBarManager: NSObject, ObservableObject, NSMenuDelegate {
         menu.addItem(.separator())
 
         // Open Main Window
-        let openItem = NSMenuItem(title: "Open Fluid Voice", action: #selector(openMainWindow), keyEquivalent: "")
+        let openItem = NSMenuItem(title: "Open FluidVoice Local", action: #selector(openMainWindow), keyEquivalent: "")
         openItem.target = self
         menu.addItem(openItem)
 
@@ -485,7 +485,7 @@ final class MenuBarManager: NSObject, ObservableObject, NSMenuDelegate {
             menu.addItem(.separator())
 
             let quitItem = NSMenuItem(
-                title: "Quit Fluid Voice",
+                title: "Quit FluidVoice Local",
                 action: #selector(NSApplication.terminate(_:)),
                 keyEquivalent: "q"
             )
@@ -527,8 +527,8 @@ final class MenuBarManager: NSObject, ObservableObject, NSMenuDelegate {
             self.restoreInputSourceMenuItem?.isHidden = sourceState == .active
             self.restoreInputSourceMenuItem?.isEnabled = sourceState != .restoring
             self.restoreInputSourceMenuItem?.title = sourceState == .secureInput
-                ? "Recover Fluid Voice..."
-                : "Restore Fluid Voice Input Source"
+                ? "Recover FluidVoice Local..."
+                : "Restore FluidVoice Local Input Source"
         }
         self.microphoneMenuItem?.isEnabled = true
 
@@ -563,7 +563,7 @@ final class MenuBarManager: NSObject, ObservableObject, NSMenuDelegate {
         guard let owner = coordinator.secureInputOwner() else {
             self.presentRecoveryAlert(
                 title: "macOS Secure Keyboard Input Is Active",
-                message: "Leave the password or payment field in the application you last used. Fluid Voice restores automatically after the secure field releases the keyboard. If the lock remains, save your work and sign out of macOS or restart the Mac."
+                message: "Leave the password or payment field in the application you last used. FluidVoice Local restores automatically after the secure field releases the keyboard. If the lock remains, save your work and sign out of macOS or restart the Mac."
             )
             return
         }
@@ -571,7 +571,7 @@ final class MenuBarManager: NSObject, ObservableObject, NSMenuDelegate {
         guard owner.isRunning else {
             self.presentRecoveryAlert(
                 title: "macOS Kept a Stale Secure Keyboard Lock",
-                message: "\(owner.applicationName) has already closed, and macOS still records its old process as the Secure Input owner. Save your work and sign out of macOS or restart the Mac. Fluid Voice restores after login."
+                message: "\(owner.applicationName) has already closed, and macOS still records its old process as the Secure Input owner. Save your work and sign out of macOS or restart the Mac. FluidVoice Local restores after login."
             )
             return
         }
@@ -581,15 +581,15 @@ final class MenuBarManager: NSObject, ObservableObject, NSMenuDelegate {
         else {
             self.presentRecoveryAlert(
                 title: "macOS Secure Keyboard Input Is Active",
-                message: "Leave the secure field, then return to an ordinary editable field. Fluid Voice restores automatically after macOS releases the keyboard."
+                message: "Leave the secure field, then return to an ordinary editable field. FluidVoice Local restores automatically after macOS releases the keyboard."
             )
             return
         }
 
         let alert = NSAlert()
         alert.alertStyle = .warning
-        alert.messageText = "\(owner.applicationName) Is Blocking Fluid Voice"
-        alert.informativeText = "Open \(owner.applicationName), press Command-L or click outside the password field, then return to your work. Fluid Voice restores automatically. You can also ask \(owner.applicationName) to quit normally and recover Fluid Voice; save any form text first."
+        alert.messageText = "\(owner.applicationName) Is Blocking FluidVoice Local"
+        alert.informativeText = "Open \(owner.applicationName), press Command-L or click outside the password field, then return to your work. FluidVoice Local restores automatically. You can also ask \(owner.applicationName) to quit normally and recover FluidVoice Local; save any form text first."
         alert.addButton(withTitle: "Open \(owner.applicationName)")
         alert.addButton(withTitle: "Quit \(owner.applicationName) & Recover")
         alert.addButton(withTitle: "Cancel")
@@ -615,7 +615,7 @@ final class MenuBarManager: NSObject, ObservableObject, NSMenuDelegate {
         else {
             self.presentRecoveryAlert(
                 title: "\(owner.applicationName) Stayed Open",
-                message: "Quit \(owner.applicationName) from its application menu, then choose Recover Fluid Voice again."
+                message: "Quit \(owner.applicationName) from its application menu, then choose Recover FluidVoice Local again."
             )
             return
         }
@@ -631,7 +631,7 @@ final class MenuBarManager: NSObject, ObservableObject, NSMenuDelegate {
                         if coordinator.state == .active {
                             self?.updateMenuItemsText()
                             self?.presentRecoveryAlert(
-                                title: "Fluid Voice Is Ready",
+                                title: "FluidVoice Local Is Ready",
                                 message: "Right Option is active again. You can reopen \(owner.applicationName) when you are ready."
                             )
                             return
@@ -639,8 +639,8 @@ final class MenuBarManager: NSObject, ObservableObject, NSMenuDelegate {
                     }
 
                     self?.presentRecoveryAlert(
-                        title: "Fluid Voice Needs One More Restore",
-                        message: "Secure Keyboard Input cleared. Choose Restore Fluid Voice Input Source from the Fluid Voice menu once more."
+                        title: "FluidVoice Local Needs One More Restore",
+                        message: "Secure Keyboard Input cleared. Choose Restore FluidVoice Local Input Source from the FluidVoice Local menu once more."
                     )
                     return
                 }
@@ -648,7 +648,7 @@ final class MenuBarManager: NSObject, ObservableObject, NSMenuDelegate {
 
             self?.presentRecoveryAlert(
                 title: "macOS Kept the Secure Keyboard Lock",
-                message: "\(owner.applicationName) closed, and the macOS session kept its Secure Input lock. Save your work and sign out of macOS or restart the Mac. Fluid Voice restores after login."
+                message: "\(owner.applicationName) closed, and the macOS session kept its Secure Input lock. Save your work and sign out of macOS or restart the Mac. FluidVoice Local restores after login."
             )
         }
     }
@@ -765,7 +765,7 @@ final class MenuBarManager: NSObject, ObservableObject, NSMenuDelegate {
                     msg.messageText = isBeta ? "You’re Up To Date (Beta)" : "You’re Up To Date"
                     msg.informativeText = isBeta
                         ? "You're already running the latest build available in the beta channel."
-                        : "You're already running the latest version of FluidVoice."
+                        : "You're already running the latest version of FluidVoice Local."
                 } else {
                     msg.messageText = "Update Check Failed"
                     msg.informativeText = "Unable to check for updates. Please try again later.\n\nError: \(error.localizedDescription)"
@@ -793,7 +793,7 @@ final class MenuBarManager: NSObject, ObservableObject, NSMenuDelegate {
 
         let confirm = NSAlert()
         confirm.messageText = "Rollback to \(availableVersion)?"
-        confirm.informativeText = "This will restore the backup and relaunch FluidVoice."
+        confirm.informativeText = "This will restore the backup and relaunch FluidVoice Local."
         confirm.alertStyle = .warning
         confirm.addButton(withTitle: "Rollback")
         confirm.addButton(withTitle: "Cancel")
@@ -805,7 +805,7 @@ final class MenuBarManager: NSObject, ObservableObject, NSMenuDelegate {
                 try await SimpleUpdater.shared.rollbackToLatestBackup()
                 let success = NSAlert()
                 success.messageText = "Rollback Successful"
-                success.informativeText = "Rolled back to \(availableVersion). FluidVoice will relaunch shortly."
+                success.informativeText = "Rolled back to \(availableVersion). FluidVoice Local will relaunch shortly."
                 success.alertStyle = .informational
                 success.addButton(withTitle: "Report Bug")
                 success.addButton(withTitle: "OK")
@@ -929,7 +929,7 @@ final class MenuBarManager: NSObject, ObservableObject, NSMenuDelegate {
         guard window.styleMask.contains(.titled) else { return false }
         guard window.canBecomeKey else { return false }
         guard window.isMiniaturized == false else { return false }
-        return window.title == "FluidVoice" || window.title.contains("FluidVoice")
+        return window.title == "FluidVoice Local" || window.title.contains("FluidVoice Local")
     }
 
     @objc private func openPreferences() {
@@ -969,7 +969,7 @@ final class MenuBarManager: NSObject, ObservableObject, NSMenuDelegate {
             backing: .buffered,
             defer: false
         )
-        window.title = "FluidVoice"
+        window.title = "FluidVoice Local"
         window.animationBehavior = .none
         window.minSize = self.mainWindowMinimumSize
         window.isReleasedWhenClosed = false

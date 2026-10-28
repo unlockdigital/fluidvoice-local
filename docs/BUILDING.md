@@ -13,6 +13,8 @@ The root Swift package describes the source/dependency graph; the supported macO
 
 ## Offline-ready bundle
 
+The Release build produces `FluidVoice Local.app`; offline packaging stages `build/FluidVoice Local.app` and `build/FluidVoice Local Direct Input.app`. See [naming and compatibility](BRANDING.md) for the established input-method installation path and stable OS identifiers.
+
 Run `scripts/fetch-parakeet-model.sh` during an explicit setup window, or stage an independently supplied model and verify it with `scripts/fetch-pinned-model.py --verify-only`. The committed immutable revision and hashes supply the approval boundary. The helper preserves an invalid existing model destination. No package installation, credential lookup or persistent download agent is involved.
 
 Then run `scripts/package-release.sh` followed by `scripts/package-direct-input-method.sh`. Both produce separate local artifacts under build/. The former verifies the model against the committed manifest and copies its approved files, embeds frameworks and signs the bundle; the latter applies InputMethodKit identity and microphone-only entitlements. Both run relevant artifact checks. Keep any existing staged direct-input artifact archived before making another one at the same output path.

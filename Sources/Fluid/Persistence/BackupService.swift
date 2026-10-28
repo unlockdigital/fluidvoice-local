@@ -104,7 +104,7 @@ enum BackupServiceError: LocalizedError {
         case let .unsupportedSchemaVersion(version):
             return "This backup uses an unsupported schema version (\(version.major).\(version.minor))."
         case .invalidJSON:
-            return "The selected backup file is not a valid FluidVoice backup."
+            return "The selected backup file is not a valid FluidVoice Local backup."
         }
     }
 }

@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [string]$Executable = (Join-Path $env:LOCALAPPDATA 'Programs\FluidVoice Hardened\FluidVoice Hardened.exe')
+    [string]$Executable = (Join-Path $env:LOCALAPPDATA 'Programs\FluidVoice Local\FluidVoice Local.exe')
 )
 
 $ErrorActionPreference = 'Stop'
@@ -28,14 +28,14 @@ if (-not $isAdministrator) {
 }
 
 $rules = @(
-    @{ Name = 'FluidVoice Hardened - Block Outbound'; Direction = 'Outbound' },
-    @{ Name = 'FluidVoice Hardened - Block Inbound'; Direction = 'Inbound' }
+    @{ Name = 'FluidVoice Local - Block Outbound'; Direction = 'Outbound' },
+    @{ Name = 'FluidVoice Local - Block Inbound'; Direction = 'Inbound' }
 )
 foreach ($rule in $rules) {
     Get-NetFirewallRule -DisplayName $rule.Name -ErrorAction SilentlyContinue | Remove-NetFirewallRule -ErrorAction Stop
     New-NetFirewallRule -DisplayName $rule.Name -Direction $rule.Direction -Action Block -Program $executablePath -Profile Any -Enabled True -ErrorAction Stop | Out-Null
 }
 
-Get-NetFirewallRule -DisplayName 'FluidVoice Hardened - Block *' |
+Get-NetFirewallRule -DisplayName 'FluidVoice Local - Block *' |
     Get-NetFirewallApplicationFilter |
     Select-Object InstanceID, Program

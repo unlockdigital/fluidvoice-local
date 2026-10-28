@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Reset all local state owned by FluidVoice Hardened.
+# Reset all local state owned by FluidVoice Local.
 #
 # Removes the hardened build's UserDefaults, Keychain credentials, logs, and
 # Application Support data so the next launch starts from a clean, first-run state.
@@ -21,7 +21,7 @@ KEYCHAIN_SERVICE="com.unlockdigital.fluidvoicehardened.provider-api-keys"
 REMOVE_MODELS=0
 [ "${1:-}" = "--models" ] && REMOVE_MODELS=1
 
-echo "Resetting FluidVoice Hardened local state..."
+echo "Resetting FluidVoice Local local state..."
 
 # UserDefaults holds settings AND transcription/file-transcription history + derived stats;
 # Application Support holds dictation audio history. Both are removed below.

@@ -78,8 +78,8 @@ extension SettingsStore {
 
             if self.launchAtStartupEnabled != enabled {
                 let mismatchMessage = enabled
-                    ? "macOS did not enable FluidVoice in Login Items. Check System Settings > General > Login Items."
-                    : "macOS still shows FluidVoice in Login Items. Check System Settings > General > Login Items."
+                    ? "macOS did not enable FluidVoice Local in Login Items. Check System Settings > General > Login Items."
+                    : "macOS still shows FluidVoice Local in Login Items. Check System Settings > General > Login Items."
                 self.applyLaunchAtStartupErrorMessage(mismatchMessage)
                 DebugLogger.shared.warning(mismatchMessage, source: "SettingsStore")
             }
@@ -126,16 +126,16 @@ extension SettingsStore {
             lowercasedDescription.contains("sign") ||
             lowercasedDescription.contains("entitlement")
         {
-            return "FluidVoice could not \(action) launch at startup. This build may not be signed correctly for macOS Login Items."
+            return "FluidVoice Local could not \(action) launch at startup. This build may not be signed correctly for macOS Login Items."
         }
 
         if lowercasedDescription.contains("approval") ||
             lowercasedDescription.contains("authorize")
         {
-            return "macOS needs approval before FluidVoice can \(action) launch at startup. Check System Settings > General > Login Items."
+            return "macOS needs approval before FluidVoice Local can \(action) launch at startup. Check System Settings > General > Login Items."
         }
 
-        return "FluidVoice could not \(action) launch at startup. macOS reported: \(nsError.localizedDescription)"
+        return "FluidVoice Local could not \(action) launch at startup. macOS reported: \(nsError.localizedDescription)"
     }
 
     private func cleanupLegacyCompatibilityLoginItemAfterDisable() {
@@ -217,11 +217,11 @@ private enum LaunchAtStartupSystemState {
     var message: String {
         switch self {
         case .enabled:
-            return "FluidVoice reflects the actual macOS login item state."
+            return "FluidVoice Local reflects the actual macOS login item state."
         case .disabled:
-            return "FluidVoice reflects the actual macOS login item state. Unsigned or development builds may fail to enable this."
+            return "FluidVoice Local reflects the actual macOS login item state. Unsigned or development builds may fail to enable this."
         case .requiresApproval:
-            return "macOS requires approval for FluidVoice in Login Items before launch at startup becomes active."
+            return "macOS requires approval for FluidVoice Local in Login Items before launch at startup becomes active."
         }
     }
 }

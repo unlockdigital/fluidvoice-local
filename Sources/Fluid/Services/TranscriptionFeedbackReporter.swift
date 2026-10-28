@@ -23,7 +23,7 @@ enum TranscriptionFeedbackReporter {
             case let .httpError(statusCode):
                 return "Report failed with HTTP \(statusCode)."
             case .disabledInHardenedBuild:
-                return "Transcription feedback is disabled in FluidVoice Hardened."
+                return "Transcription feedback is disabled in FluidVoice Local."
             }
         }
     }

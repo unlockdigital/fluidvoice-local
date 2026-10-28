@@ -1,7 +1,7 @@
 using System.Reflection;
 using FluidVoice.Hardened;
 
-var assembly = Assembly.Load("FluidVoice Hardened");
+var assembly = Assembly.Load("FluidVoice Local");
 var mergerType = assembly.GetType(
     "FluidVoice.Hardened.Windows.LiveTranscriptMerger",
     throwOnError: true)!;

@@ -2,14 +2,14 @@
 #
 # Create the least-privilege FluidVoice macOS input source from the verified hardened build.
 #
-# Output: build/FluidVoice Direct Input.app
+# Output: build/FluidVoice Local Direct Input.app
 # Usage:  ./scripts/package-direct-input-method.sh
 #
 set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-BASE_APP="$REPO_DIR/build/FluidVoice Hardened.app"
-DIRECT_APP="$REPO_DIR/build/FluidVoice Direct Input.app"
+BASE_APP="$REPO_DIR/build/FluidVoice Local.app"
+DIRECT_APP="$REPO_DIR/build/FluidVoice Local Direct Input.app"
 PLIST="$DIRECT_APP/Contents/Info.plist"
 SIGN_ID="${SIGN_IDENTITY:--}"
 BUNDLE_ID="com.unlockdigital.inputmethod.FluidVoiceHardened"
@@ -40,8 +40,8 @@ delete_plist_key() {
 
 echo "[2/4] Applying InputMethodKit identity and least-privilege metadata ..."
 /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier $BUNDLE_ID" "$PLIST"
-/usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName FluidVoice Direct Input" "$PLIST"
-/usr/libexec/PlistBuddy -c "Set :CFBundleName FluidVoice Direct Input" "$PLIST"
+/usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName FluidVoice Local Direct Input" "$PLIST"
+/usr/libexec/PlistBuddy -c "Set :CFBundleName FluidVoice Local Direct Input" "$PLIST"
 
 delete_plist_key NSAccessibilityUsageDescription
 delete_plist_key NSAppleEventsUsageDescription
@@ -111,7 +111,7 @@ done
 codesign "${SIGN_ARGS[@]}" --entitlements "$ENTITLEMENTS" "$DIRECT_APP"
 
 echo "[4/4] Verifying bundle, model, identity, and direct-input gates ..."
-EXPECTED_BUNDLE_ID="$BUNDLE_ID" EXPECTED_NAME_PREFIX="FluidVoice Direct Input" \
+EXPECTED_BUNDLE_ID="$BUNDLE_ID" EXPECTED_NAME_PREFIX="FluidVoice Local Direct Input" \
   "$REPO_DIR/scripts/verify-built-app.sh" "$DIRECT_APP"
 "$REPO_DIR/scripts/verify-direct-input-method.sh" "$DIRECT_APP"
 

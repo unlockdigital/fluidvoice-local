@@ -673,7 +673,7 @@ final class AIEnhancementSettingsViewModel: ObservableObject {
     }
 
     private func keychainPermissionExplanation(for status: OSStatus) -> String {
-        var message = "FluidVoice stores provider API keys securely in your macOS Keychain but does not currently have permission to access it."
+        var message = "FluidVoice Local stores provider API keys securely in your macOS Keychain but does not currently have permission to access it."
         if let detail = SecCopyErrorMessageString(status, nil) as String? {
             message += "\n\nmacOS reported: \(detail) (\(status))"
         }
@@ -682,7 +682,7 @@ final class AIEnhancementSettingsViewModel: ObservableObject {
     }
 
     private func keychainPersistenceExplanation(for error: Error) -> String {
-        var message = "FluidVoice could not save the API key to your macOS Keychain, so this provider was not verified."
+        var message = "FluidVoice Local could not save the API key to your macOS Keychain, so this provider was not verified."
         if let keychainError = error as? KeychainServiceError {
             switch keychainError {
             case .invalidData:
@@ -721,7 +721,7 @@ final class AIEnhancementSettingsViewModel: ObservableObject {
 
     func presentKeychainAccessAlert(message: String) {
         let msg = message.isEmpty
-            ? "FluidVoice stores provider API keys securely in your macOS Keychain. Please grant access by choosing \"Always Allow\" when prompted."
+            ? "FluidVoice Local stores provider API keys securely in your macOS Keychain. Please grant access by choosing \"Always Allow\" when prompted."
             : message
 
         let alert = NSAlert()
@@ -1814,7 +1814,7 @@ final class AIEnhancementSettingsViewModel: ObservableObject {
 
     func addCurrentAppPromptBinding(for mode: SettingsStore.PromptMode) {
         guard let target = self.resolveBindingTargetApp() else {
-            self.appPromptBindingErrorMessage = "Could not detect a target app. Focus another app window (outside FluidVoice) and try again."
+            self.appPromptBindingErrorMessage = "Could not detect a target app. Focus another app window (outside FluidVoice Local) and try again."
             DebugLogger.shared.info(
                 "App prompt binding skipped: unable to resolve non-Fluid target app",
                 source: "AISettingsView"

@@ -20,7 +20,7 @@ final class SettingsStore: ObservableObject {
     private(set) var launchAtStartupEnabled = false
     private(set) var launchAtStartupErrorMessage: String?
     private(set) var launchAtStartupStatusMessage =
-        "FluidVoice reflects the actual macOS login item state. Unsigned or development builds may fail to enable this."
+        "FluidVoice Local reflects the actual macOS login item state. Unsigned or development builds may fail to enable this."
 
     private init() {
         self.enforceHardenedDefaults()
@@ -4070,11 +4070,11 @@ final class SettingsStore: ObservableObject {
             }
         }
 
-        /// Optional badge text for the card (e.g., "FluidVoice Pick")
+        /// Optional badge text for the card (e.g., "FluidVoice Local Pick")
         var badgeText: String? {
             switch self {
-            case .parakeetTDT: return "FluidVoice Pick"
-            case .parakeetTDTv2: return "FluidVoice Pick"
+            case .parakeetTDT: return "FluidVoice Local Pick"
+            case .parakeetTDTv2: return "FluidVoice Local Pick"
             case .parakeetRealtime: return "Beta"
             case .qwen3Asr: return "Beta"
             case .cohereTranscribeSixBit: return "New"

@@ -157,4 +157,4 @@ guard modeSources().contains(where: { boolProperty($0, kTISPropertyInputSourceIs
     exit(1)
 }
 
-print("Selected FluidVoice Direct Input")
+print("Selected FluidVoice Local Direct Input")

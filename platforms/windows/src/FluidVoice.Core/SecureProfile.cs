@@ -2,7 +2,7 @@ namespace FluidVoice.Hardened;
 
 public static class SecureProfile
 {
-    public const string ProductName = "FluidVoice Hardened for Windows";
+    public const string ProductName = "FluidVoice Local for Windows";
     public const string ProductVersion = "1.2.0-win11";
     public const string ModelFileName = "ggml-large-v3-turbo-q5_0.bin";
     public const long ModelBytes = 574_041_195;

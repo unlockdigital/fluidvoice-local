@@ -43,8 +43,9 @@ echo
   && pass "Visible direct-input mode declared" \
   || fail "Direct-input mode dictionary mismatch"
 LOCALIZED_INFO="$APP/Contents/Resources/en.lproj/InfoPlist.strings"
+LOCALIZED_NAME="$(/usr/libexec/PlistBuddy -c "Print :$EXPECTED_MODE_ID" "$LOCALIZED_INFO" 2>/dev/null)"
 if [ -f "$LOCALIZED_INFO" ] \
-  && [ "$(/usr/libexec/PlistBuddy -c "Print :$EXPECTED_MODE_ID" "$LOCALIZED_INFO" 2>/dev/null)" = "FluidVoice Direct Input" ]; then
+  && { [ "$LOCALIZED_NAME" = "FluidVoice Local Direct Input" ] || [ "$LOCALIZED_NAME" = "FluidVoice Direct Input" ]; }; then
   pass "Direct-input mode has a human-readable localized name"
 else
   fail "Direct-input mode localization is missing"

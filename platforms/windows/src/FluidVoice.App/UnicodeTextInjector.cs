@@ -16,7 +16,7 @@ internal static class UnicodeTextInjector
         {
             if (!NativeMethods.SetForegroundWindow(targetWindow))
             {
-                throw new InvalidOperationException("Windows did not allow FluidVoice to restore the original dictation target.");
+                throw new InvalidOperationException("Windows did not allow FluidVoice Local to restore the original dictation target.");
             }
             await Task.Delay(125, cancellationToken).ConfigureAwait(true);
         }

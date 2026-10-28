@@ -1,12 +1,12 @@
 #!/bin/bash
 #
-# Build a COMPLETE, self-contained, re-signed Release build of FluidVoice Hardened.
+# Build a COMPLETE, self-contained, re-signed Release build of FluidVoice Local.
 #
 # This script creates the distributable offline bundle. It builds the Release target,
 # embeds any required @rpath frameworks, includes the checksum-verified speech model,
 # signs the complete bundle with hardened-runtime flags, and verifies the result.
 #
-# Output: build/FluidVoice Hardened.app
+# Output: build/FluidVoice Local.app
 # Usage:  ./scripts/package-release.sh
 #
 set -euo pipefail
@@ -17,7 +17,7 @@ cd "$REPO_DIR"
 DD="${FLUIDVOICE_DERIVED_DATA_PATH:-${DERIVED_DATA:-$REPO_DIR/build/DerivedData}}"
 PACKAGES="${FLUIDVOICE_PACKAGE_DIRECTORY:-$REPO_DIR/build/SourcePackages}"
 OUT_DIR="$REPO_DIR/build"
-APP_NAME="FluidVoice Hardened.app"
+APP_NAME="FluidVoice Local.app"
 SIGN_ID="${SIGN_IDENTITY:--}"   # default ad-hoc; override with a Developer ID for stable perms
 CACHE_DIR="$DD/LocalBuildCache"
 mkdir -p "$CACHE_DIR/ClangModules" "$CACHE_DIR/SwiftPMModules" "$CACHE_DIR/Packages"
@@ -63,7 +63,7 @@ embed_missing() {
     fi
   done
 }
-embed_missing "$APP/Contents/MacOS/FluidVoice Hardened"
+embed_missing "$APP/Contents/MacOS/FluidVoice Local"
 # One pass over embedded frameworks to catch transitive @rpath deps.
 for fw in "$APP/Contents/Frameworks"/*.framework; do
   [ -d "$fw" ] || continue

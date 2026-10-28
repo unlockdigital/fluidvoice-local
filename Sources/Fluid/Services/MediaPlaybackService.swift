@@ -1,6 +1,6 @@
 import Foundation
 
-/// Media auto-pause is excluded from FluidVoice Hardened.
+/// Media auto-pause is excluded from FluidVoice Local.
 ///
 /// The former implementation loaded a private MediaRemote adapter through a Perl child
 /// process and a separately signed dynamic framework. Dictation does not require that path.

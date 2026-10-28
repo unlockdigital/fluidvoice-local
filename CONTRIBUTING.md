@@ -1,4 +1,4 @@
-# Contributing to FluidVoice Hardened
+# Contributing to FluidVoice Local
 
 Start with a focused issue describing the current behavior, expected result, platform and reproducible evidence. Agree on major feature and privacy-boundary changes before implementation. Keep Mac and Windows code scoped and preserve working installations and user data.
 

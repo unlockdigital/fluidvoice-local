@@ -1,5 +1,7 @@
 # Source provenance
 
+The community project adopted the **FluidVoice Local** name on October 28, 2026. Its previous publication name was FluidVoice Hardened. Branding changes update current documentation, UI text and new build products. Source-origin hashes, historical commit metadata, original attribution and third-party references continue to describe the preserved inputs. Stable OS and storage identifiers retain compatibility values as documented in [BRANDING.md](docs/BRANDING.md).
+
 ## Mac lineage
 
 The maintained Mac branch descends from the real `altic-dev/FluidVoice` commit `fba0d3156037ee4ddeb5b8e34d1faf838ad37c7b` (June 22, 2026). Its original upstream history remains intact. The upstream project and contributors retain their original credit and GPLv3 notices.

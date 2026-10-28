@@ -1,4 +1,4 @@
-# FluidVoice Hardened Development Handoff
+# FluidVoice Local Development Handoff
 
 This community fork preserves the owner's local-first Mac implementation on real altic-dev/FluidVoice ancestry. The source baseline is fba0d3156037ee4ddeb5b8e34d1faf838ad37c7b. Local hardening and InputMethodKit changes were imported from 7f4850cc61ca3594e552031cfe38e240b914bb1f plus its preserved working files.
 

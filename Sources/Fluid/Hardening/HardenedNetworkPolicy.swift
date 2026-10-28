@@ -34,9 +34,9 @@ enum HardenedNetworkPolicy {
         var errorDescription: String? {
             switch self {
             case .blockedExternalEndpoint:
-                return "External network access is disabled in FluidVoice Hardened."
+                return "External network access is disabled in FluidVoice Local."
             case .unsupportedScheme:
-                return "FluidVoice Hardened permits local HTTP endpoints only."
+                return "FluidVoice Local permits local HTTP endpoints only."
             }
         }
     }
