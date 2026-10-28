@@ -12,7 +12,7 @@ final class CommandModeService: ObservableObject {
     @Published private(set) var currentChatID: String?
 
     private let terminalService = TerminalService()
-    private let chatStore = ChatHistoryStore.shared
+    private lazy var chatStore = ChatHistoryStore.shared
     private var currentTurnCount = 0
     private let maxTurns = 20
     private var didRequireConfirmationThisRun: Bool = false
@@ -29,6 +29,7 @@ final class CommandModeService: ObservableObject {
     // MARK: - Initialization
 
     init() {
+        guard DirectInputMethodRuntime.isEnabled == false else { return }
         // Load current chat from store
         self.loadCurrentChatFromStore()
     }
@@ -305,6 +306,12 @@ final class CommandModeService: ObservableObject {
 
     /// Process user voice/text command
     func processUserCommand(_ text: String, notifyInvalidRequest: Bool = false) async {
+#if HARDENED
+        // Hardened build: Command Mode is disabled. Refuse at the entry point so the command
+        // pipeline (LLM planning, confirmation, shell execution) never runs.
+        DebugLogger.shared.error("CommandModeService: blocked — Command Mode disabled in hardened build", source: "CommandModeService")
+        return
+#else
         guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
 
         self.isProcessing = true
@@ -322,6 +329,7 @@ final class CommandModeService: ObservableObject {
         }
 
         await self.processNextTurn(notifyInvalidRequest: notifyInvalidRequest)
+#endif
     }
 
     /// Process follow-up command from notch input

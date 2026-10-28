@@ -271,7 +271,8 @@ struct ContentView: View {
 
         return observed
             .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
-                let trusted = AXIsProcessTrusted()
+                guard DirectInputMethodRuntime.isEnabled == false else { return }
+                let trusted = AccessibilityTrust.isTrusted()
                 if trusted != self.accessibilityEnabled {
                     self.accessibilityEnabled = trusted
                 }
@@ -287,6 +288,11 @@ struct ContentView: View {
             }
             .onReceive(NotificationCenter.default.publisher(for: .settingsBackupDidRestore)) { _ in
                 self.reloadSettingsStateAfterBackupRestore()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .fluidVoiceDirectInputClientAvailabilityChanged)) { _ in
+                if DirectInputMethodRuntime.isEnabled {
+                    self.hotkeyManagerInitialized = DirectInputMethodBridge.shared.hasActiveClient
+                }
             }
             .toolbar {
                 if !self.settings.shouldShowOnboarding {
@@ -509,7 +515,9 @@ struct ContentView: View {
         self.menuBarManager.initializeMenuBar()
         self.scheduleDelayedAudioInitialization()
         self.configureNotchCallbacks()
-        self.startAccessibilityPolling()
+        if DirectInputMethodRuntime.isEnabled == false {
+            self.startAccessibilityPolling()
+        }
         self.initializeHotkeyManagerIfNeeded()
 
         Task {
@@ -1005,14 +1013,18 @@ struct ContentView: View {
             Section {
                 self.sidebarNavigationLink(.preferences, title: "Settings", systemImage: "gearshape.fill")
                 self.sidebarNavigationLink(.voiceEngine, title: "Voice Engine", systemImage: "waveform")
+#if !HARDENED
                 self.sidebarNavigationLink(.aiEnhancements, title: "AI Enhancement", systemImage: "brain")
+#endif
                 self.sidebarNavigationLink(.customDictionary, title: "Custom Dictionary", systemImage: "text.book.closed.fill")
             } header: {
                 self.sidebarSectionHeader("Configure")
             }
 
             Section {
+#if !HARDENED
                 self.sidebarNavigationLink(.commandMode, title: "Command Mode", systemImage: "terminal.fill")
+#endif
                 self.sidebarNavigationLink(.meetingTools, title: "File Transcription", systemImage: "doc.text.fill")
             } header: {
                 self.sidebarSectionHeader("Use")
@@ -1027,7 +1039,9 @@ struct ContentView: View {
 
             Section {
                 self.sidebarNavigationLink(.welcome, title: "Getting Started", systemImage: "house.fill")
+#if !HARDENED
                 self.sidebarNavigationLink(.feedback, title: "Feedback", systemImage: "envelope.fill")
+#endif
             } header: {
                 self.sidebarSectionHeader("Help")
             }
@@ -1437,6 +1451,17 @@ struct ContentView: View {
     }
 
     private func captureRecordingContext() {
+        if DirectInputMethodRuntime.isEnabled {
+            NotchContentState.shared.recordingTargetPID = NSWorkspace.shared.frontmostApplication?.processIdentifier
+            let info = self.getCurrentAppInfo()
+            self.recordingAppInfo = info
+            self.rewriteModeService.setPromptAppBundleID(info.bundleId)
+            self.recordingPrecedingText = SettingsStore.shared.needsDictationFormattingContext
+                ? DirectInputMethodBridge.shared.textBeforeCursor()
+                : ""
+            return
+        }
+
         // Capture the focused target PID BEFORE any overlay/UI changes.
         // Used to restore focus when the user interacts with overlay dropdowns.
         let focusedPID = TypingService.captureSystemFocusedPID()
@@ -1464,6 +1489,10 @@ struct ContentView: View {
     }
 
     private func resolveTypingTargetPID() -> (pid: pid_t?, shouldRestoreOriginalFocus: Bool) {
+        if DirectInputMethodRuntime.isEnabled {
+            return (nil, false)
+        }
+
         let originalPID = NotchContentState.shared.recordingTargetPID
         let currentFocusedPID = TypingService.captureSystemFocusedPID()
             ?? NSWorkspace.shared.frontmostApplication?.processIdentifier
@@ -1762,7 +1791,9 @@ struct ContentView: View {
             }
         }
 
-        DebugLogger.shared.debug("Using app context for AI: app=\(appInfo.name), bundleId=\(appInfo.bundleId), title=\(appInfo.windowTitle)", source: "ContentView")
+        // Privacy: app name and window title are sensitive (reveal what is being dictated into).
+        // Log the bundle id only.
+        DebugLogger.shared.debug("Using app context for AI: bundleId=\(appInfo.bundleId)", source: "ContentView")
         if self.shouldTracePromptProcessing {
             let activeSlot = dictationSlot ?? self.currentDictationShortcutSlot(for: self.activeRecordingMode) ?? .primary
             let selectedProfile = SettingsStore.shared.resolvedDictationPromptProfile(
@@ -1972,7 +2003,8 @@ struct ContentView: View {
 
         // If this was a rewrite recording, process the rewrite instead of typing
         if wasRewriteMode {
-            DebugLogger.shared.info("Processing rewrite with instruction: \(transcribedText)", source: "ContentView")
+            // Privacy: log instruction length only, never the spoken instruction text.
+            DebugLogger.shared.info("Processing rewrite with instruction (chars=\(transcribedText.count))", source: "ContentView")
             let appInfo = self.recordingAppInfo ?? self.getCurrentAppInfo()
             await self.processRewriteWithVoiceInstruction(transcribedText, appInfo: appInfo)
             AnalyticsService.shared.capture(
@@ -1988,7 +2020,8 @@ struct ContentView: View {
 
         // If this was a command recording, process the command
         if wasCommandMode {
-            DebugLogger.shared.info("Processing command: \(transcribedText)", source: "ContentView")
+            // Privacy: log instruction length only, never the spoken command text.
+            DebugLogger.shared.info("Processing command (chars=\(transcribedText.count))", source: "ContentView")
             await self.processCommandWithVoice(transcribedText)
             AnalyticsService.shared.capture(
                 .transcriptionCompleted,
@@ -2517,7 +2550,8 @@ struct ContentView: View {
     ) async {
         self.rewriteModeService.setPromptAppBundleID(appInfo.bundleId)
         let hasOriginalText = !self.rewriteModeService.originalText.isEmpty
-        DebugLogger.shared.info("Processing \(hasOriginalText ? "rewrite" : "write/improve") - instruction: '\(instruction)', originalText length: \(self.rewriteModeService.originalText.count)", source: "ContentView")
+        // Privacy: log lengths only, never the instruction or original text.
+        DebugLogger.shared.info("Processing \(hasOriginalText ? "rewrite" : "write/improve") - instructionChars: \(instruction.count), originalTextChars: \(self.rewriteModeService.originalText.count)", source: "ContentView")
 
         // Show processing animation
         self.menuBarManager.setProcessing(true)
@@ -2666,7 +2700,8 @@ struct ContentView: View {
     // MARK: - Command Mode Voice Processing
 
     private func processCommandWithVoice(_ command: String) async {
-        DebugLogger.shared.info("Processing voice command: '\(command)'", source: "ContentView")
+        // Privacy: log length only, never the command text.
+        DebugLogger.shared.info("Processing voice command (chars=\(command.count))", source: "ContentView")
 
         // Show processing animation
         self.menuBarManager.setProcessing(true)
@@ -2751,6 +2786,7 @@ struct ContentView: View {
     /// Best-effort: re-activate the app that was focused when recording started.
     /// Skips the AX restore work when the captured text element is already focused.
     private func restoreFocusToRecordingTarget() async {
+        guard DirectInputMethodRuntime.isEnabled == false else { return }
         guard let pid = NotchContentState.shared.recordingTargetPID else { return }
         let startedAt = ProcessInfo.processInfo.systemUptime
         self.appBench("focus_restore_start targetPID=\(pid)")
@@ -2889,6 +2925,47 @@ struct ContentView: View {
             let slot = self.activeDictationShortcutSlot ?? .primary
             SettingsStore.shared.setDictationPromptSelection(selection, for: slot)
             self.applyDictationShortcutSelectionContext(for: slot)
+        }
+
+        if DirectInputMethodRuntime.isEnabled {
+            DirectInputMethodBridge.shared.configureToggleHandler {
+                if self.asr.isRunning {
+                    let route = self.currentDictationOutputRouteForHotkeyStop()
+                    Task {
+                        await self.stopAndProcessTranscription(route: route)
+                    }
+                } else {
+                    Task { @MainActor in
+                        guard await self.asr.ensureMicrophoneAccess() else {
+                            DebugLogger.shared.error(
+                                "Direct-input recording blocked because microphone access was not granted",
+                                source: "ContentView"
+                            )
+                            NSSound.beep()
+                            return
+                        }
+
+                        // A first-run microphone prompt can briefly move text focus. Give
+                        // InputMethodKit a bounded opportunity to reconnect the original client
+                        // before recording begins, preserving direct insertion for the same field.
+                        for _ in 0..<20 where !DirectInputMethodBridge.shared.hasActiveClient {
+                            try? await Task.sleep(nanoseconds: 100_000_000)
+                        }
+                        guard DirectInputMethodBridge.shared.hasActiveClient else {
+                            DebugLogger.shared.error(
+                                "Direct-input client unavailable after microphone authorization",
+                                source: "ContentView"
+                            )
+                            NSSound.beep()
+                            return
+                        }
+
+                        self.beginDictationRecording(for: .primary, mode: .dictate)
+                    }
+                }
+            }
+            self.hotkeyManagerInitialized = DirectInputMethodBridge.shared.hasActiveClient
+            return
         }
 
         guard self.hotkeyManager == nil else { return }
@@ -3176,8 +3253,13 @@ extension ContentView {
     }
 
     private var shouldTracePromptProcessing: Bool {
+#if HARDENED
+        // Hardened build: prompt tracing (which gathers prompt/response/selected-text) is disabled.
+        return false
+#else
         self.forcePromptTraceToConsole ||
             UserDefaults.standard.bool(forKey: "EnableDebugLogs")
+#endif
     }
 
     private var forcePromptTraceToConsole: Bool {
@@ -3185,11 +3267,8 @@ extension ContentView {
     }
 
     private func logDictationPromptTrace(_ title: String, value: String) {
-        let line = "[PromptTrace][Dictate] \(title):\n\(value)"
-        if self.forcePromptTraceToConsole {
-            print(line)
-        }
-        DebugLogger.shared.debug(line, source: "ContentView")
+        // Privacy: never log prompt/response/selected-text content. Log the field length only.
+        DebugLogger.shared.debug("[PromptTrace][Dictate] \(title): chars=\(value.count)", source: "ContentView")
     }
 
     private func customPromptAnalyticsProperties(promptSource: String, overrideEmpty: Bool?) -> [String: Any] {
@@ -3389,7 +3468,7 @@ extension ContentView {
     }
 
     private var onboardingAccessibilityReady: Bool {
-        self.accessibilityEnabled
+        self.accessibilityEnabled || DirectInputMethodRuntime.isEnabled
     }
 
     private var onboardingAIReady: Bool {
@@ -3485,7 +3564,10 @@ extension ContentView {
     }
 
     func checkAccessibilityPermissions() -> Bool {
-        return AXIsProcessTrusted()
+        if DirectInputMethodRuntime.isEnabled {
+            return true
+        }
+        return AccessibilityTrust.isTrusted()
     }
 
     func openAccessibilitySettings() {
@@ -3592,7 +3674,7 @@ extension ContentView {
     private func showAccessibilityGuidePanel(requestID: UUID) {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.65) {
             guard self.accessibilityGuideRequestID == requestID else { return }
-            guard !AXIsProcessTrusted() else {
+            guard !AccessibilityTrust.isTrusted() else {
                 self.finishAccessibilityPermissionFlow()
                 return
             }
@@ -3702,7 +3784,7 @@ extension ContentView {
             while !Task.isCancelled {
                 try? await Task.sleep(nanoseconds: 900_000_000)
 
-                let isTrusted = AXIsProcessTrusted()
+                let isTrusted = AccessibilityTrust.isTrusted()
                 let settingsFrame = await MainActor.run {
                     self.systemSettingsWindowFrame()
                 }
@@ -3753,6 +3835,7 @@ extension ContentView {
     }
 
     func startAccessibilityPolling() {
+        guard DirectInputMethodRuntime.isEnabled == false else { return }
         // Don't poll if already enabled or if we've already auto-restarted once
         guard !self.accessibilityEnabled else { return }
         guard !UserDefaults.standard.bool(forKey: self.hasAutoRestartedForAccessibilityKey) else { return }
@@ -3766,7 +3849,7 @@ extension ContentView {
                 try? await Task.sleep(nanoseconds: 2_000_000_000) // Poll every 2 seconds
 
                 // Check if permission was granted
-                let nowTrusted = AXIsProcessTrusted()
+                let nowTrusted = AccessibilityTrust.isTrusted()
                 if nowTrusted && !self.accessibilityEnabled {
                     await MainActor.run {
                         DebugLogger.shared.info("Accessibility permission granted! Auto-restarting app...", source: "ContentView")

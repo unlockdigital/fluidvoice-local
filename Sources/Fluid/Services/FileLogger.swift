@@ -25,7 +25,7 @@ final class FileLogger {
 
     private init() {
         let baseDirectory = self.fileManager.urls(for: .libraryDirectory, in: .userDomainMask).first ?? URL(fileURLWithPath: NSTemporaryDirectory())
-        self.logDirectory = baseDirectory.appendingPathComponent("Logs/Fluid", isDirectory: true)
+        self.logDirectory = baseDirectory.appendingPathComponent("Logs/\(AppIdentity.logsFolderName)", isDirectory: true)
         self.logFileURL = self.logDirectory.appendingPathComponent("Fluid.log", isDirectory: false)
         self.backupLogURL = self.logDirectory.appendingPathComponent("Fluid.log.1", isDirectory: false)
         self.legacyLogFileURL = self.logDirectory.appendingPathComponent("fluid.log", isDirectory: false)
@@ -35,13 +35,23 @@ final class FileLogger {
             self.createLogDirectoryIfNeeded()
             self.migrateLegacyLogFilesIfNeeded()
             self.rotateIfNeeded(force: false)
+            // prepareCrashLogging() opens (and, if needed, creates) the log file so the crash
+            // handler can write to it. When diagnostic logging is disabled this leaves an EMPTY
+            // file used only for crash capture — no diagnostic content is written.
             self.prepareCrashLogging()
-            self.appendRunMetadata()
+            // Strict fail-closed: write NO diagnostic content (incl. run metadata) to disk when
+            // diagnostic logging is disabled. Crash diagnostics remain enabled via the fd above.
+            if DiagnosticLogging.isEnabled {
+                self.appendRunMetadata()
+            }
         }
         self.installCrashHandlersIfNeeded()
     }
 
     func append(line: String) {
+        // Fail closed: suppress ALL diagnostic file writes when logging is disabled.
+        // Only crash diagnostics (a separate fd-based path) are exempt.
+        guard DiagnosticLogging.isEnabled else { return }
         self.queue.async { [weak self] in
             guard let self = self else { return }
             self.appendUnlocked(line: line)
@@ -49,6 +59,7 @@ final class FileLogger {
     }
 
     func appendSync(line: String) {
+        guard DiagnosticLogging.isEnabled else { return }
         self.queue.sync {
             self.appendUnlocked(line: line)
         }

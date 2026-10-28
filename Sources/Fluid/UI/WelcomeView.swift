@@ -1878,6 +1878,19 @@ struct OnboardingFlowView: View {
                 try await self.asr.ensureAsrReady()
             } catch {
                 DebugLogger.shared.error("Failed to prepare onboarding voice model \(route.model.displayName): \(error)", source: "OnboardingFlowView")
+                // Surface a user-visible error instead of only logging, so onboarding does not
+                // appear stuck on "activating".
+#if HARDENED
+                // Hardened build never downloads models online; the model must be preseeded.
+                self.asr.errorTitle = "Offline Model Missing"
+                self.asr.errorMessage = "\(route.model.displayName) is not bundled in this build, and the hardened build does not download models from the internet.\n\nUse an offline-ready build (packaged with the model preseeded)."
+#else
+                // The partial model directory has already been removed by ASRService, so the card
+                // returns to Download & Activate.
+                self.asr.errorTitle = "Model Setup Failed"
+                self.asr.errorMessage = "Could not download or activate \(route.model.displayName). Check your network connection during setup and try Download & Activate again.\n\nDetails: \(error.localizedDescription)"
+#endif
+                self.asr.showError = true
             }
             await self.asr.checkIfModelsExistAsync()
         }

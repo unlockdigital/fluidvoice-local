@@ -26,6 +26,7 @@ enum DictationAudioHistoryError: LocalizedError {
     case audioMissing
     case noAudioEntries
     case zipFailed(String)
+    case historyDisabled
 
     var errorDescription: String? {
         switch self {
@@ -37,6 +38,8 @@ enum DictationAudioHistoryError: LocalizedError {
             return "No saved dictation audio is available to export."
         case let .zipFailed(message):
             return "Could not create export zip. \(message)"
+        case .historyDisabled:
+            return "Audio history is disabled."
         }
     }
 }
@@ -44,7 +47,7 @@ enum DictationAudioHistoryError: LocalizedError {
 final nonisolated class DictationAudioHistoryStore: @unchecked Sendable {
     static let shared = DictationAudioHistoryStore()
 
-    private let appSupportFolder = "FluidVoice"
+    private let appSupportFolder = AppIdentity.appSupportFolderName
     private let audioFolder = "DictationAudioHistory"
     private let fileManager = FileManager.default
 
@@ -56,6 +59,11 @@ final nonisolated class DictationAudioHistoryStore: @unchecked Sendable {
         timestamp: Date,
         model: String?
     ) throws -> DictationAudioMetadata {
+        // Fail-closed hard guard: never write microphone audio to disk when audio history
+        // is disabled, regardless of caller checks.
+        guard SettingsStore.shared.saveTranscriptionHistory,
+              SettingsStore.shared.saveAudioWithTranscriptionHistory
+        else { throw DictationAudioHistoryError.historyDisabled }
         let directory = try self.audioDirectory()
         let fileName = self.audioFileName(entryID: entryID, timestamp: timestamp)
         let url = directory.appendingPathComponent(fileName, isDirectory: false)
@@ -164,11 +172,20 @@ final nonisolated class DictationAudioHistoryStore: @unchecked Sendable {
     }
 
     func exportAudioArchive(entries: [TranscriptionHistoryEntry], to destinationURL: URL) throws {
+#if HARDENED
+        // Hardened build: history/audio export is disabled during the local-only trial.
+        throw DictationAudioHistoryError.historyDisabled
+#else
         try self.exportArchive(entries: entries, to: destinationURL)
+#endif
     }
 
     func exportPair(entry: TranscriptionHistoryEntry, to destinationURL: URL) throws {
+#if HARDENED
+        throw DictationAudioHistoryError.historyDisabled
+#else
         try self.exportArchive(entries: [entry], to: destinationURL)
+#endif
     }
 
     func suggestedAudioExportFilename(for date: Date = Date()) -> String {

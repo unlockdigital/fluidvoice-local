@@ -178,11 +178,11 @@ private struct UnavailableAIIntegrationShim: PrivateAIIntegrationProviding {
     var modelDirectoryURL: URL {
         FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)
             .first?
-            .appendingPathComponent("FluidVoice", isDirectory: true)
+            .appendingPathComponent(AppIdentity.appSupportFolderName, isDirectory: true)
             .appendingPathComponent(PrivateAIProviderFeature.shared.modelDirectoryName, isDirectory: true)
             .appendingPathComponent("Models", isDirectory: true)
             ?? URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
-            .appendingPathComponent("FluidVoice", isDirectory: true)
+            .appendingPathComponent(AppIdentity.appSupportFolderName, isDirectory: true)
             .appendingPathComponent(PrivateAIProviderFeature.shared.modelDirectoryName, isDirectory: true)
             .appendingPathComponent("Models", isDirectory: true)
     }

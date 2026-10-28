@@ -182,6 +182,10 @@ final class TranscriptionHistoryStore: ObservableObject {
         aiProcessingError: String? = nil,
         audio: DictationAudioMetadata? = nil
     ) {
+        // Fail-closed hard guard: never persist a history entry when history is disabled,
+        // regardless of whether the caller checked the toggle. (Covers unguarded callers.)
+        guard SettingsStore.shared.saveTranscriptionHistory else { return }
+
         // Skip empty transcriptions
         guard !processedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
 
@@ -285,6 +289,8 @@ final class TranscriptionHistoryStore: ObservableObject {
     }
 
     func restore(from payload: [TranscriptionHistoryEntry]) {
+        // Fail-closed: do not import dictation history from a backup when history is disabled.
+        guard SettingsStore.shared.saveTranscriptionHistory else { return }
         self.entries = payload.sorted { $0.timestamp > $1.timestamp }
         self.selectedEntryID = self.entries.first?.id
         self.saveEntries()

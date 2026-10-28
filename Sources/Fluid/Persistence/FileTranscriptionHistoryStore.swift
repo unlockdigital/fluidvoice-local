@@ -114,6 +114,8 @@ final class FileTranscriptionHistoryStore: ObservableObject {
 
     /// Add a completed file transcription to history (call after successful transcribeFile).
     func addEntry(_ result: TranscriptionResult) {
+        // Fail-closed hard guard: file/meeting transcription history also respects the toggle.
+        guard SettingsStore.shared.saveTranscriptionHistory else { return }
         guard !result.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
 
         let entry = FileTranscriptionEntry(from: result)

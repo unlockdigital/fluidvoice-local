@@ -222,3 +222,58 @@ sample/
 .codex
 AGENTS.md
 builds/
+
+# ===========================================================================
+# Hardened FluidVoice overrides (later rules win).
+# The canonical hardened repo tracks its documentation and hardening tooling.
+# Upstream's private/developer scripts and marketing assets stay ignored.
+# ===========================================================================
+!docs/
+!docs/**
+!AGENTS.md
+!scripts/
+scripts/*
+!scripts/verify-hardening.sh
+!scripts/verify-built-app.sh
+!scripts/reset-hardened-state.sh
+!scripts/phase9-runtime-checks.sh
+!scripts/package-release.sh
+!scripts/package-direct-input-method.sh
+!scripts/verify-direct-input-method.sh
+!scripts/install-direct-input-method.sh
+!scripts/register-direct-input-source.swift
+!scripts/persist-direct-input-source.swift
+!scripts/activate-direct-input-source-macos26.swift
+!scripts/fetch-parakeet-model.sh
+!scripts/model-fetch-daemon.sh
+!scripts/install-model-fetch-daemon.sh
+!scripts/check-hardened-preferences.sh
+!scripts/test-hardened-preference-checks.sh
+!scripts/test-hardened-network-policy.sh
+!scripts/check-direct-input-health.sh
+!scripts/fluidvoice-input-source-guardian.swift
+!scripts/inspect-direct-input-state.swift
+!scripts/inspect-fluidvoice-overlay-windows.swift
+!scripts/test-direct-input-modifier-gestures.sh
+!scripts/configure-globe-key.swift
+!scripts/fixtures/
+!scripts/fixtures/HardenedNetworkPolicyTests.swift
+
+# Vendored model binaries (preseeded into the .app; never in git history)
+vendor/
+
+# Claude local session state
+.claude/
+
+# Community fork policy and platform source are tracked.
+!**/AGENTS.md
+!docs/**
+!platforms/
+!platforms/**
+!spec/
+!spec/**
+!licenses/
+!licenses/**
+!scripts/build-hardened.sh
+!scripts/check-macos27-readiness.sh
+!scripts/fixtures/MacOS27Readiness.swift

@@ -158,14 +158,24 @@ final class ASRService: ObservableObject {
 
         switch model {
         case .appleSpeechAnalyzer:
+#if HARDENED
+            // Defense-in-depth: selectedSpeechModel never returns Apple cases under HARDENED,
+            // so this is unreachable — but never instantiate an Apple provider regardless.
+            return self.getWhisperProvider()
+#else
             if #available(macOS 26.0, *) {
                 return self.getAppleSpeechAnalyzerProvider()
             } else {
                 // Fallback to legacy Apple Speech on older macOS
                 return self.getAppleSpeechProvider()
             }
+#endif
         case .appleSpeech:
+#if HARDENED
+            return self.getWhisperProvider()
+#else
             return self.getAppleSpeechProvider()
+#endif
         case .parakeetTDT, .parakeetTDTv2:
             return self.getFluidAudioProvider()
         case .parakeetRealtime:
@@ -359,13 +369,23 @@ final class ASRService: ObservableObject {
     private func getProvider(for model: SettingsStore.SpeechModel) -> TranscriptionProvider {
         switch model {
         case .appleSpeechAnalyzer:
+#if HARDENED
+            // Unreachable under HARDENED (Apple models not selectable); return a universal
+            // local provider rather than any Apple provider.
+            return WhisperProvider(modelOverride: .whisperBase)
+#else
             if #available(macOS 26.0, *) {
                 return AppleSpeechAnalyzerProvider()
             } else {
                 return AppleSpeechProvider()
             }
+#endif
         case .appleSpeech:
+#if HARDENED
+            return WhisperProvider(modelOverride: .whisperBase)
+#else
             return AppleSpeechProvider()
+#endif
         case .parakeetTDT, .parakeetTDTv2:
             // Create a new provider configured for the specific model
             return FluidAudioProvider(modelOverride: model, configureWordBoosting: false)
@@ -389,6 +409,11 @@ final class ASRService: ObservableObject {
     ///   - model: The model to download
     ///   - progressHandler: Optional callback for download progress (0.0 to 1.0)
     func downloadModel(_ model: SettingsStore.SpeechModel, progressHandler: ((Double) -> Void)?) async throws {
+#if HARDENED
+        _ = model
+        _ = progressHandler
+        throw HardenedNetworkPolicy.PolicyError.blockedExternalEndpoint
+#else
         try await self.downloadRegistry.run(for: model.id) { [weak self] in
             guard let self else { return }
 
@@ -427,12 +452,13 @@ final class ASRService: ObservableObject {
                 throw error
             }
         }
+#endif
     }
 
     /// Call this when the transcription provider setting changes to reset state
     func resetTranscriptionProvider() {
         let newModel = SettingsStore.shared.selectedSpeechModel
-        DebugLogger.shared.info("ASRService: Switching to '\(newModel.displayName)', resetting provider state...", source: "ASRService")
+        DebugLogger.shared.info("ASRService: Switching to \(newModel.displayName), resetting provider state...", source: "ASRService")
 
         self.isAsrReady = false
         self.modelsExistOnDisk = false
@@ -464,7 +490,7 @@ final class ASRService: ObservableObject {
             await MainActor.run {
                 self.refreshWordBoostStatus()
             }
-            DebugLogger.shared.info("ASRService: Provider reset complete, will initialize '\(newModel.displayName)' on next use", source: "ASRService")
+            DebugLogger.shared.info("ASRService: Provider reset complete, will initialize \(newModel.displayName) on next use", source: "ASRService")
         }
     }
 
@@ -671,7 +697,8 @@ final class ASRService: ObservableObject {
         guard let hit = hits.first else { return }
         if hit != self.lastBoostHitTerm {
             self.lastBoostHitTerm = hit
-            DebugLogger.shared.info("BOOST_HIT: '\(hit)'", source: "ASRService")
+            // Privacy: never log the boosted term — it is a word from the user's transcript.
+            DebugLogger.shared.info("BOOST_HIT (chars=\(hit.count))", source: "ASRService")
         }
         self.refreshWordBoostStatus()
     }
@@ -679,6 +706,17 @@ final class ASRService: ObservableObject {
     /// Call this AFTER the app has finished launching to complete ASR initialization.
     /// This must be called from onAppear or later, never during init.
     func initialize() {
+#if HARDENED
+        // Launch-time tripwire: the resolved speech model must never be an Apple Speech route
+        // in the hardened build. selectedSpeechModel remaps Apple selections to the local
+        // default, so this should always hold; assert + log loudly if it ever does not.
+        let resolvedModel = SettingsStore.shared.selectedSpeechModel
+        if resolvedModel == .appleSpeech || resolvedModel == .appleSpeechAnalyzer {
+            DebugLogger.shared.error("HARDENED invariant violated: Apple Speech selected as ASR model", source: "ASRService")
+            assertionFailure("Hardened build resolved an Apple Speech ASR model")
+        }
+#endif
+
         // Check microphone permission (deferred from init to avoid AVFCapture race condition)
         self.micStatus = AVCaptureDevice.authorizationStatus(for: .audio)
         self.micPermissionGranted = (self.micStatus == .authorized)
@@ -750,6 +788,39 @@ final class ASRService: ObservableObject {
                 self.micPermissionGranted = granted
                 self.micStatus = granted ? .authorized : .denied
             }
+        }
+    }
+
+    /// Resolves the microphone gate for the permission-free input-method runtime.
+    /// The first shortcut press can therefore present macOS's microphone prompt and continue
+    /// recording after approval. Accessibility and Input Monitoring are never requested here.
+    func ensureMicrophoneAccess() async -> Bool {
+        let currentStatus = AVCaptureDevice.authorizationStatus(for: .audio)
+        switch currentStatus {
+        case .authorized:
+            self.micPermissionGranted = true
+            self.micStatus = .authorized
+            return true
+
+        case .notDetermined:
+            let granted = await withCheckedContinuation { continuation in
+                AVCaptureDevice.requestAccess(for: .audio) { granted in
+                    continuation.resume(returning: granted)
+                }
+            }
+            self.micPermissionGranted = granted
+            self.micStatus = granted ? .authorized : .denied
+            return granted
+
+        case .denied, .restricted:
+            self.micPermissionGranted = false
+            self.micStatus = currentStatus
+            return false
+
+        @unknown default:
+            self.micPermissionGranted = false
+            self.micStatus = currentStatus
+            return false
         }
     }
 
@@ -864,7 +935,7 @@ final class ASRService: ObservableObject {
                 self.benchmarkLog("streaming_timer_start intervalMs=\(Int((self.streamingChunkDurationSeconds * 1000).rounded())) minSamples=\(self.minimumStreamingPreviewSamples)")
                 self.startStreamingTranscription()
             } else {
-                DebugLogger.shared.debug("⏸️ Skipping streaming - model '\(model.displayName)' does not support real-time chunk processing", source: "ASRService")
+                DebugLogger.shared.debug("⏸️ Skipping streaming - model=\(model.displayName) does not support real-time chunk processing", source: "ASRService")
             }
             DebugLogger.shared.info("✅ START() completed successfully", source: "ASRService")
         } catch {
@@ -1092,10 +1163,7 @@ final class ASRService: ObservableObject {
             let finalAudioSeconds = Double(pcm.count) / 16_000.0
             let finalRTF = finalAudioSeconds > 0 ? (Double(finalElapsedMs) / 1000.0) / finalAudioSeconds : 0
             DebugLogger.shared.debug("stop(): final transcription finished source=\(finalSource)", source: "ASRService")
-            DebugLogger.shared.debug(
-                "Transcription completed: '\(result.text)' (confidence: \(result.confidence))",
-                source: "ASRService"
-            )
+            // Privacy: never log transcript text. Metadata (length, confidence) is logged below.
             DebugLogger.shared.info(
                 "Final ASR result | provider=\(provider.name) | samples=\(pcm.count) | textChars=\(result.text.trimmingCharacters(in: .whitespacesAndNewlines).count) | confidence=\(result.confidence)",
                 source: "ASRService"
@@ -1117,7 +1185,8 @@ final class ASRService: ObservableObject {
             // Do not update self.finalText here to avoid instant binding insert in playground
             let cleanedText = ASRService.applyCustomDictionary(ASRService.removeFillerWords(result.text))
             self.recordWordBoostHitIfAny(transcribedText: cleanedText)
-            DebugLogger.shared.debug("After post-processing: '\(cleanedText)'", source: "ASRService")
+            // Privacy: log post-processed length only, never the text.
+            DebugLogger.shared.debug("After post-processing: chars=\(cleanedText.count)", source: "ASRService")
             self.benchmarkLog("stop_end result=success totalMs=\(self.elapsedMilliseconds(since: stopStartedAt)) recordingAgeMs=\(self.elapsedMilliseconds(since: self.benchmarkRecordingStartedAt)) cleanedChars=\(cleanedText.count)")
             if SettingsStore.shared.saveTranscriptionHistory,
                SettingsStore.shared.saveAudioWithTranscriptionHistory,
@@ -1363,19 +1432,19 @@ final class ASRService: ObservableObject {
             return self.tryBindToSystemDefaultInput()
         }
 
-        DebugLogger.shared.debug("Found preferred input device: '\(device.name)' (id: \(device.id))", source: "ASRService")
+        DebugLogger.shared.debug("Found preferred input device: \(device.name) (id: \(device.id))", source: "ASRService")
 
         let ok = self.setEngineInputDevice(deviceID: device.id, deviceUID: device.uid, deviceName: device.name)
         if ok == false {
             DebugLogger.shared.warning(
-                "Failed to bind engine input to preferred device '\(device.name)' (uid: \(device.uid)). Trying system default input.",
+                "Failed to bind engine input to preferred device \(device.name) (uid: \(device.uid)). Trying system default input.",
                 source: "ASRService"
             )
             // Try to use system default as fallback
             return self.tryBindToSystemDefaultInput()
         }
 
-        DebugLogger.shared.info("✅ Successfully bound input to '\(device.name)'", source: "ASRService")
+        DebugLogger.shared.info("✅ Successfully bound input to \(device.name)", source: "ASRService")
         return true
     }
 
@@ -1407,19 +1476,19 @@ final class ASRService: ObservableObject {
             return self.tryBindToSystemDefaultOutput()
         }
 
-        DebugLogger.shared.debug("Found preferred output device: '\(device.name)' (id: \(device.id))", source: "ASRService")
+        DebugLogger.shared.debug("Found preferred output device: \(device.name) (id: \(device.id))", source: "ASRService")
 
         let ok = self.setEngineOutputDevice(deviceID: device.id, deviceUID: device.uid, deviceName: device.name)
         if ok == false {
             DebugLogger.shared.warning(
-                "Failed to bind engine output to preferred device '\(device.name)' (uid: \(device.uid)). Trying system default output.",
+                "Failed to bind engine output to preferred device \(device.name) (uid: \(device.uid)). Trying system default output.",
                 source: "ASRService"
             )
             // Try to use system default as fallback
             return self.tryBindToSystemDefaultOutput()
         }
 
-        DebugLogger.shared.info("✅ Successfully bound output to '\(device.name)'", source: "ASRService")
+        DebugLogger.shared.info("✅ Successfully bound output to \(device.name)", source: "ASRService")
         return true
     }
 
@@ -1501,7 +1570,7 @@ final class ASRService: ObservableObject {
         // which physical device the node captures from.
         guard let audioUnit = inputNode.audioUnit else {
             DebugLogger.shared.error(
-                "Unable to access AudioUnit for AVAudioEngine.inputNode; cannot bind to '\(deviceName)' (uid: \(deviceUID))",
+                "Unable to access AudioUnit for AVAudioEngine.inputNode; cannot bind to \(deviceName) (uid: \(deviceUID))",
                 source: "ASRService"
             )
             return false
@@ -1522,19 +1591,19 @@ final class ASRService: ObservableObject {
             // This is expected for certain device types - not a fatal error
             if status == -10_851 {
                 DebugLogger.shared.warning(
-                    "Cannot bind INPUT to '\(deviceName)' - likely an aggregate device (OSStatus: \(status)). Will use system default.",
+                    "Cannot bind INPUT to \(deviceName) - likely an aggregate device (OSStatus: \(status)). Will use system default.",
                     source: "ASRService"
                 )
             } else {
                 DebugLogger.shared.error(
-                    "AudioUnitSetProperty(CurrentDevice) failed for INPUT '\(deviceName)' (uid: \(deviceUID), id: \(deviceID)) with OSStatus: \(status)",
+                    "AudioUnitSetProperty(CurrentDevice) failed for INPUT \(deviceName) (uid: \(deviceUID), id: \(deviceID)) with OSStatus: \(status)",
                     source: "ASRService"
                 )
             }
             return false
         }
 
-        DebugLogger.shared.info("✅ Bound ASR input to '\(deviceName)' (uid: \(deviceUID), id: \(deviceID))", source: "ASRService")
+        DebugLogger.shared.info("✅ Bound ASR input to \(deviceName) (uid: \(deviceUID), id: \(deviceID))", source: "ASRService")
         return true
     }
 
@@ -1550,7 +1619,7 @@ final class ASRService: ObservableObject {
         // which physical device the node outputs to.
         guard let audioUnit = outputNode.audioUnit else {
             DebugLogger.shared.error(
-                "Unable to access AudioUnit for AVAudioEngine.outputNode; cannot bind to '\(deviceName)' (uid: \(deviceUID))",
+                "Unable to access AudioUnit for AVAudioEngine.outputNode; cannot bind to \(deviceName) (uid: \(deviceUID))",
                 source: "ASRService"
             )
             return false
@@ -1571,19 +1640,19 @@ final class ASRService: ObservableObject {
             // This is expected for certain device types - not a fatal error
             if status == -10_851 {
                 DebugLogger.shared.warning(
-                    "Cannot bind OUTPUT to '\(deviceName)' - likely an aggregate device (OSStatus: \(status)). Will use system default.",
+                    "Cannot bind OUTPUT to \(deviceName) - likely an aggregate device (OSStatus: \(status)). Will use system default.",
                     source: "ASRService"
                 )
             } else {
                 DebugLogger.shared.error(
-                    "AudioUnitSetProperty(CurrentDevice) failed for OUTPUT '\(deviceName)' (uid: \(deviceUID), id: \(deviceID)) with OSStatus: \(status)",
+                    "AudioUnitSetProperty(CurrentDevice) failed for OUTPUT \(deviceName) (uid: \(deviceUID), id: \(deviceID)) with OSStatus: \(status)",
                     source: "ASRService"
                 )
             }
             return false
         }
 
-        DebugLogger.shared.info("✅ Bound ASR output to '\(deviceName)' (uid: \(deviceUID), id: \(deviceID))", source: "ASRService")
+        DebugLogger.shared.info("✅ Bound ASR output to \(deviceName) (uid: \(deviceUID), id: \(deviceID))", source: "ASRService")
         return true
     }
 
@@ -2115,7 +2184,7 @@ final class ASRService: ObservableObject {
                     {
                         if !cachedUIDs.contains(device.uid) {
                             DebugLogger.shared.info(
-                                "🎧 New Bluetooth device detected: '\(device.name)'. Auto-switching...",
+                                "🎧 New Bluetooth device detected: \(device.name). Auto-switching...",
                                 source: "ASRService"
                             )
 
@@ -2292,6 +2361,20 @@ final class ASRService: ObservableObject {
             DebugLogger.shared.info("Models already cached on disk: \(modelsAlreadyCached)", source: "ASRService")
             DebugLogger.shared.debug("Model cache lookup complete in \(String(format: "%.3f", Date().timeIntervalSince(totalStartTime)))s", source: "ASRService")
 
+#if HARDENED
+            // Fail closed (offline-only): if no valid local model is present (not preseeded and
+            // not previously downloaded), do NOT attempt an online Hugging Face download. Surface
+            // a clear message instead. Online download is a non-hardened/dev path only.
+            if !modelsAlreadyCached {
+                DebugLogger.shared.error("ASRService: offline model missing for \(provider.name); refusing online download (hardened)", source: "ASRService")
+                throw NSError(
+                    domain: "Hardened",
+                    code: -3000,
+                    userInfo: [NSLocalizedDescriptionKey: "Offline model missing; use an offline-ready build."]
+                )
+            }
+#endif
+
             // Suppress stderr noise during model loading (ALWAYS restore, even on failure).
             let originalStderr = dup(STDERR_FILENO)
             var didRedirectStderr = false
@@ -2411,6 +2494,15 @@ final class ASRService: ObservableObject {
                 "ASRService: Provider cache was empty; recovery retry disabled after first failure for \(provider.name).",
                 source: "ASRService"
             )
+            // Delete the partial/empty model directory left by the failed fresh download so it is
+            // not mistaken for an installed model on the next launch (the onboarding card must show
+            // Download & Activate again).
+            do {
+                try await provider.clearCache()
+                DebugLogger.shared.info("ASRService: Removed partial model cache after failed download for \(provider.name)", source: "ASRService")
+            } catch {
+                DebugLogger.shared.warning("ASRService: Failed to remove partial model cache for \(provider.name): \(error)", source: "ASRService")
+            }
             throw NSError(
                 domain: "ASRService",
                 code: -2000,
@@ -2728,7 +2820,8 @@ final class ASRService: ObservableObject {
                 self.partialTranscription = updatedText
                 self.previousFullTranscription = newText
 
-                DebugLogger.shared.debug("✅ Streaming: '\(updatedText)' (\(String(format: "%.2f", duration))s)", source: "ASRService")
+                // Privacy: log streamed length only, never the partial transcript text.
+                DebugLogger.shared.debug("✅ Streaming: chars=\(updatedText.count) (\(String(format: "%.2f", duration))s)", source: "ASRService")
             }
             let rtf = chunk.isEmpty ? 0 : duration / (Double(chunk.count) / 16_000.0)
             let chunkDoneAgeMs = self.elapsedMilliseconds(since: self.benchmarkRecordingStartedAt)

@@ -71,6 +71,19 @@ final class TerminalService {
     ) async -> CommandResult {
         let startTime = Date()
 
+#if HARDENED
+        // Hardened build: Command Mode is disabled. Refuse all shell execution at the lowest
+        // level so no dictated or LLM-generated text can ever run a command, regardless of caller.
+        DebugLogger.shared.error("TerminalService: blocked shell execution in hardened build", source: "TerminalService")
+        return CommandResult(
+            success: false,
+            command: command,
+            output: "",
+            error: "Command Mode is disabled in the hardened build.",
+            exitCode: -1,
+            executionTimeMs: 0
+        )
+#else
         let process = Process()
         let outputPipe = Pipe()
         let errorPipe = Pipe()
@@ -139,6 +152,7 @@ final class TerminalService {
                 executionTimeMs: executionTime
             )
         }
+#endif
     }
 
     /// Convert result to JSON string for AI processing

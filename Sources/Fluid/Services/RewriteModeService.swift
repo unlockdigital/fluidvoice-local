@@ -18,22 +18,35 @@ final class RewriteModeService: ObservableObject {
     private let typingService = TypingService()
     private var thinkingBuffer: [String] = [] // Buffer thinking tokens
     private var forcePromptTraceToConsole: Bool {
+#if HARDENED
+        return false
+#else
         ProcessInfo.processInfo.environment["FLUID_PROMPT_TRACE"] == "1"
+#endif
     }
 
     private var diagnosticsEnabled: Bool {
+#if HARDENED
+        return false
+#else
         if ProcessInfo.processInfo.environment["FLUID_REWRITE_DIAGNOSTICS"] == "1" {
             return true
         }
         return UserDefaults.standard.bool(forKey: "RewriteModeDiagnosticsEnabled")
+#endif
     }
 
     private var shouldTracePromptProcessing: Bool {
+#if HARDENED
+        // Hardened build: prompt tracing (which gathers prompt/context/response content) is disabled.
+        return false
+#else
         if let explicit = UserDefaults.standard.object(forKey: "RewriteModePromptTraceEnabled") as? Bool {
             return explicit
         }
         // Default OFF to avoid logging prompt/context content in normal usage.
         return false
+#endif
     }
 
     struct Message: Identifiable, Equatable {
@@ -428,11 +441,8 @@ final class RewriteModeService: ObservableObject {
     }
 
     private func logPromptTrace(_ title: String, value: String) {
-        let line = "[PromptTrace][Edit] \(title):\n\(value)"
-        if self.forcePromptTraceToConsole {
-            print(line)
-        }
-        self.appendDiagnosticLog(line)
+        // Privacy: never log prompt/context/response content. Log the field length only.
+        self.appendDiagnosticLog("[PromptTrace][Edit] \(title): chars=\(value.count)")
     }
 
     private func appendDiagnosticLog(_ message: String) {

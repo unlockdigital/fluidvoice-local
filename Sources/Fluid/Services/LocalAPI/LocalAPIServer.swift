@@ -14,6 +14,13 @@ final class LocalAPIServer {
     private init() {}
 
     func start() {
+#if HARDENED
+        // Hardened build: the Local API server never starts — no loopback listener is bound,
+        // so port 47733 stays closed and the history/transcribe/postprocess endpoints are
+        // unreachable. (Configuration.enabled is also forced false; this is defense in depth.)
+        DebugLogger.shared.info("Local API permanently disabled (hardened build)", source: "LocalAPIServer")
+        return
+#else
         let config = LocalAPI.Configuration.current
         guard config.enabled else {
             DebugLogger.shared.info("Local API disabled", source: "LocalAPIServer")
@@ -68,6 +75,7 @@ final class LocalAPIServer {
         } catch {
             DebugLogger.shared.error("Local API failed to start: \(error.localizedDescription)", source: "LocalAPIServer")
         }
+#endif
     }
 
     func stop() {

@@ -7,6 +7,7 @@
 
 import AppKit
 import Carbon
+import InputMethodKit
 import PromiseKit
 import SwiftUI
 import UserNotifications
@@ -17,55 +18,170 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
     private var didRequestMainWindowReopen = false
     private var shouldSuppressNextReopenActivation = false
     private var wasLaunchedAsLoginItem = false
+    private var inputMethodServer: IMKServer?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Bring up file logging + crash handlers immediately during launch.
         _ = FileLogger.shared
         // Must be read during the launch callback - the current Apple Event identifies
         // login-item launches (used to optionally start silently, see issue #369).
-        self.wasLaunchedAsLoginItem = Self.detectLoginItemLaunch()
+        self.wasLaunchedAsLoginItem = DirectInputMethodRuntime.isEnabled
+            ? false
+            : Self.detectLoginItemLaunch()
         DebugLogger.shared.info(
             "Application launched [loginItemLaunch=\(self.wasLaunchedAsLoginItem)]",
             source: "AppDelegate"
         )
-        UNUserNotificationCenter.current().delegate = self
+        if DirectInputMethodRuntime.isEnabled == false {
+            UNUserNotificationCenter.current().delegate = self
+        }
 
-        // Initialize app settings (dock visibility, etc.)
-        SettingsStore.shared.initializeAppSettings()
-        LocalAPIServer.shared.start()
+        if DirectInputMethodRuntime.isEnabled {
+            self.registerDirectInputSourceIfNeeded()
+            let inputMethodServerReady = self.startDirectInputMethodServer()
+            DirectInputSourceCoordinator.shared.start(inputMethodServerReady: inputMethodServerReady)
+        }
+
+        // Offline model preseeding: if a model is bundled in the app and the FluidAudio cache is
+        // missing it, copy it into place (APFS clone) BEFORE settings/ASR read installed state,
+        // so onboarding shows the model as ready without any Hugging Face contact.
+        ModelPreseeder.preseedIfNeeded()
+
+        // Input methods stay faceless and must never promote themselves into a foreground app.
+        // The ordinary app continues to honor its saved Dock visibility preference.
+        if DirectInputMethodRuntime.isEnabled {
+            NSApp.setActivationPolicy(.accessory)
+        } else {
+            SettingsStore.shared.initializeAppSettings()
+            LocalAPIServer.shared.start()
+        }
 
         // Record first-open synchronously before async analytics bootstrap so
         // onboarding initialization is deterministic on brand-new installs.
-        let isTrueFirstOpen = AnalyticsIdentityStore.shared.ensureFirstOpenRecorded()
-        SettingsStore.shared.bootstrapOnboardingState(isTrueFirstOpen: isTrueFirstOpen)
-
-        AnalyticsService.shared.bootstrap()
-
-        if isTrueFirstOpen {
-            AnalyticsService.shared.capture(.appFirstOpen)
+        let isTrueFirstOpen: Bool
+        if DirectInputMethodRuntime.isEnabled {
+            isTrueFirstOpen = false
+        } else {
+            isTrueFirstOpen = AnalyticsIdentityStore.shared.ensureFirstOpenRecorded()
         }
-        AnalyticsService.shared.capture(
-            .appOpen,
-            properties: ["accessibility_trusted": AXIsProcessTrusted()]
-        )
+        SettingsStore.shared.bootstrapOnboardingState(isTrueFirstOpen: isTrueFirstOpen)
+        if DirectInputMethodRuntime.isEnabled {
+            SettingsStore.shared.onboardingCompleted = true
+            self.hideDirectInputSettingsWindowAfterStartup()
+        }
 
-        // Check for updates automatically if enabled (initial check on launch)
-        self.checkForUpdatesAutomatically()
-
-        // Schedule periodic update checks every hour while app is running
-        self.schedulePeriodicUpdateChecks()
+        if DirectInputMethodRuntime.isEnabled == false {
+            AnalyticsService.shared.bootstrap()
+            if isTrueFirstOpen {
+                AnalyticsService.shared.capture(.appFirstOpen)
+            }
+            AnalyticsService.shared.capture(
+                .appOpen,
+                properties: ["accessibility_trusted": AccessibilityTrust.isTrusted()]
+            )
+            // Check for updates automatically if enabled (initial check on launch).
+            self.checkForUpdatesAutomatically()
+            // Schedule periodic update checks every hour while app is running.
+            self.schedulePeriodicUpdateChecks()
+        }
 
         // Login Items can launch hidden; reveal the real SwiftUI window so ContentView startup runs.
-        self.openMainWindowOnLaunch()
+        if DirectInputMethodRuntime.isEnabled == false {
+            self.openMainWindowOnLaunch()
+        }
 
         // Note: App UI is designed with dark color scheme in mind
         // All gradients and effects are optimized for dark mode
     }
 
+    private func startDirectInputMethodServer() -> Bool {
+        guard let connectionName = DirectInputMethodRuntime.connectionName,
+              connectionName.isEmpty == false
+        else {
+            DebugLogger.shared.error(
+                "Direct input mode is missing its InputMethodKit connection name",
+                source: "AppDelegate"
+            )
+            return false
+        }
+
+        guard let bundleIdentifier = Bundle.main.bundleIdentifier else {
+            DebugLogger.shared.error("Direct input mode is missing its bundle identifier", source: "AppDelegate")
+            return false
+        }
+
+        // The bundle-based initializer reads InputMethodServerControllerClass from the
+        // signed Info.plist and follows the system input-method launch path on macOS 26.
+        self.inputMethodServer = IMKServer(name: connectionName, bundleIdentifier: bundleIdentifier)
+        DebugLogger.shared.info("Direct input method server started", source: "AppDelegate")
+        return self.inputMethodServer != nil
+    }
+
+    /// Text Input Services can omit a newly copied per-user input method until the input-method
+    /// process presents its own application bundle. Registration is local, idempotent, and adds
+    /// no permissions or data transport. System Settings owns the user's enabled and selected
+    /// source preferences, which avoids a transient enabled state outside the persisted list.
+    private func registerDirectInputSourceIfNeeded() {
+        guard let bundleIdentifier = Bundle.main.bundleIdentifier else { return }
+        let modeIdentifier = "\(bundleIdentifier).direct"
+        let existingModes = Self.inputSources(
+            property: kTISPropertyInputSourceID,
+            value: modeIdentifier
+        )
+        if existingModes.isEmpty == false {
+            DebugLogger.shared.info(
+                "Direct input source already present in TIS catalog [modes=\(existingModes.count)]",
+                source: "AppDelegate"
+            )
+            return
+        }
+
+        let bundleURL = Bundle.main.bundleURL as CFURL
+        let status = TISRegisterInputSource(bundleURL)
+        guard status == noErr else {
+            DebugLogger.shared.error(
+                "Direct input source self-registration failed with OSStatus \(status)",
+                source: "AppDelegate"
+            )
+            return
+        }
+
+        let parentSources = Self.inputSources(property: kTISPropertyBundleID, value: bundleIdentifier)
+        let modeSources = Self.inputSources(property: kTISPropertyInputSourceID, value: modeIdentifier)
+
+        DebugLogger.shared.info(
+            "Direct input source registered [parents=\(parentSources.count), modes=\(modeSources.count)]",
+            source: "AppDelegate"
+        )
+    }
+
+    private static func inputSources(property: CFString, value: String) -> [TISInputSource] {
+        let filter = [property as String: value] as CFDictionary
+        guard let unmanagedList = TISCreateInputSourceList(filter, true) else { return [] }
+
+        let list = unmanagedList.takeRetainedValue()
+        return (0..<CFArrayGetCount(list)).map { index in
+            unsafeBitCast(CFArrayGetValueAtIndex(list, index), to: TISInputSource.self)
+        }
+    }
+
+    private func hideDirectInputSettingsWindowAfterStartup() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+            for window in NSApp.windows where (window is NSPanel) == false {
+                window.orderOut(nil)
+            }
+        }
+    }
+
     func applicationWillTerminate(_ notification: Notification) {
         DebugLogger.shared.info("Application will terminate", source: "AppDelegate")
+        if DirectInputMethodRuntime.isEnabled {
+            DirectInputSourceCoordinator.shared.stop()
+        }
         self.shutdownPrivateAIRuntimeForTermination()
-        LocalAPIServer.shared.stop()
+        if DirectInputMethodRuntime.isEnabled == false {
+            LocalAPIServer.shared.stop()
+        }
         // Clean up the update check timer
         self.updateCheckTimer?.invalidate()
         self.updateCheckTimer = nil

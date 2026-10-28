@@ -95,6 +95,11 @@ final class HuggingFaceModelDownloader {
     }
 
     func ensureModelsPresent(at targetRoot: URL, onProgress: ((Double, String) -> Void)? = nil) async throws {
+#if HARDENED
+        _ = targetRoot
+        _ = onProgress
+        throw HardenedNetworkPolicy.PolicyError.blockedExternalEndpoint
+#else
         try FileManager.default.createDirectory(at: targetRoot, withIntermediateDirectories: true)
 
         // Build list of files to download (flatten directories via HF API tree)
@@ -164,6 +169,7 @@ final class HuggingFaceModelDownloader {
                 DebugLogger.shared.info("[ModelDL] Overall progress: \(fallbackCompleted)/\(fallbackTotal)", source: "ModelDownloader")
             }
         }
+#endif
     }
 
     private func requiredItems() -> [ModelItem] {

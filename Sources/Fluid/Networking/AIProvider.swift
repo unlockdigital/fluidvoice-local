@@ -24,41 +24,7 @@ final class OpenAICompatibleProvider: AIProvider {
 
     // Helper function to detect if the endpoint is local
     private func isLocalEndpoint(_ urlString: String) -> Bool {
-        guard let url = URL(string: urlString),
-              let host = url.host else { return false }
-
-        let hostLower = host.lowercased()
-
-        // Check for localhost variations
-        if hostLower == "localhost" || hostLower == "127.0.0.1" {
-            return true
-        }
-
-        // Check for private IP ranges
-        // 127.x.x.x
-        if hostLower.hasPrefix("127.") {
-            return true
-        }
-        // 10.x.x.x
-        if hostLower.hasPrefix("10.") {
-            return true
-        }
-        // 192.168.x.x
-        if hostLower.hasPrefix("192.168.") {
-            return true
-        }
-        // 172.16.x.x - 172.31.x.x
-        if hostLower.hasPrefix("172.") {
-            let components = hostLower.split(separator: ".")
-            if components.count >= 2,
-               let secondOctet = Int(components[1]),
-               secondOctet >= 16 && secondOctet <= 31
-            {
-                return true
-            }
-        }
-
-        return false
+        HardenedNetworkPolicy.isLoopbackEndpoint(urlString)
     }
 
     // Helper function to detect if model is a gpt-oss model (Groq reasoning models)
@@ -85,6 +51,12 @@ final class OpenAICompatibleProvider: AIProvider {
         }
 
         guard let url = URL(string: fullEndpoint) else { return "Error: Invalid Base URL" }
+
+        do {
+            try HardenedNetworkPolicy.validate(url)
+        } catch {
+            return error.localizedDescription
+        }
 
         let isLocal = self.isLocalEndpoint(endpoint)
 
@@ -120,7 +92,7 @@ final class OpenAICompatibleProvider: AIProvider {
         request.httpBody = jsonData
 
         do {
-            let (data, response) = try await URLSession.shared.data(for: request)
+            let (data, response) = try await HardenedNetworkPolicy.session.data(for: request)
 
             #if DEBUG
             DebugLogger.shared.debug("AI Request to: \(request.url?.absoluteString ?? "unknown")", source: "AIProvider")
@@ -131,7 +103,10 @@ final class OpenAICompatibleProvider: AIProvider {
 
             if let http = response as? HTTPURLResponse, http.statusCode >= 400 {
                 let errText = String(data: data, encoding: .utf8) ?? "Unknown error"
-                DebugLogger.shared.error("AI API error HTTP \(http.statusCode): \(errText)", source: "AIProvider")
+                DebugLogger.shared.error(
+                    "AI API error HTTP \(http.statusCode), responseBytes=\(data.count)",
+                    source: "AIProvider"
+                )
                 return "Error: HTTP \(http.statusCode): \(errText)"
             }
             let decoded = try JSONDecoder().decode(ChatResponse.self, from: data)

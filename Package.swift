@@ -14,7 +14,6 @@ let package = Package(
         .package(url: "https://github.com/mxcl/PromiseKit", from: "6.0.0"),
         .package(url: "https://github.com/altic-dev/DynamicNotchKit.git", branch: "main"),
         .package(url: "https://github.com/exPHAT/SwiftWhisper.git", branch: "master"),
-        .package(url: "https://github.com/PostHog/posthog-ios.git", from: "3.0.0"),
     ],
     targets: [
         .executableTarget(
@@ -25,7 +24,6 @@ let package = Package(
                 "PromiseKit",
                 "DynamicNotchKit",
                 "SwiftWhisper",
-                .product(name: "PostHog", package: "posthog-ios"),
             ]
         ),
     ]

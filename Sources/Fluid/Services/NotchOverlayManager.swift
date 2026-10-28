@@ -121,6 +121,8 @@ final class NotchOverlayManager {
 
     /// Setup cancel shortcut monitors - both global (other apps) and local (our app)
     private func setupEscapeKeyMonitors() {
+        guard DirectInputMethodRuntime.isEnabled == false else { return }
+
         let escapeHandler: (NSEvent) -> NSEvent? = { [weak self] event in
             guard SettingsStore.shared.cancelRecordingHotkeyShortcut.matches(
                 keyCode: event.keyCode,
@@ -195,7 +197,7 @@ final class NotchOverlayManager {
 
         // Start monitoring active app changes (updates icon in real-time)
         ActiveAppMonitor.shared.startMonitoring()
-        let targetScreen = OverlayScreenResolver.screenForCurrentPointer()
+        let targetScreen = OverlayScreenResolver.screenForActiveContext()
 
         // Route to bottom overlay if user preference is set
         if SettingsStore.shared.overlayPosition == .bottom {
@@ -513,7 +515,7 @@ final class NotchOverlayManager {
 
         self.commandOutputNotch = newNotch
 
-        if let screen = self.presentationPolicyScreen ?? OverlayScreenResolver.screenForCurrentPointer() {
+        if let screen = self.presentationPolicyScreen ?? OverlayScreenResolver.screenForActiveContext() {
             await newNotch.expand(on: screen)
         } else {
             await newNotch.expand()

@@ -259,6 +259,10 @@ final class WhisperProvider: TranscriptionProvider {
     // MARK: - Model Download
 
     private func downloadModel(progressHandler: ((Double) -> Void)?) async throws {
+#if HARDENED
+        _ = progressHandler
+        throw HardenedNetworkPolicy.PolicyError.blockedExternalEndpoint
+#else
         // Whisper models are hosted on Hugging Face
         let modelURLString = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/\(modelName)"
 
@@ -325,6 +329,7 @@ final class WhisperProvider: TranscriptionProvider {
                 try await Task.sleep(nanoseconds: delayNanos)
             }
         }
+#endif
     }
 
     private func downloadFile(from url: URL, to destination: URL, progressHandler: ((Double) -> Void)?) async throws {

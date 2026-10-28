@@ -631,7 +631,7 @@ final class AIEnhancementSettingsViewModel: ObservableObject {
     }
 
     private func probeKeychainAccess() -> KeychainAccessCheckResult {
-        let service = "com.fluidvoice.provider-api-keys"
+        let service = AppIdentity.keychainService
         let account = "fluidApiKeys"
 
         let query: [String: Any] = [
@@ -831,6 +831,17 @@ final class AIEnhancementSettingsViewModel: ObservableObject {
             return
         }
 
+        do {
+            try HardenedNetworkPolicy.validate(url)
+        } catch {
+            await MainActor.run {
+                self.updateConnectionStatus(.failed, for: providerID)
+                self.setConnectionError(error.localizedDescription, for: providerID)
+                self.isTestingConnection = false
+            }
+            return
+        }
+
         // Build the request based on provider type
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
@@ -912,7 +923,7 @@ final class AIEnhancementSettingsViewModel: ObservableObject {
 
         // Make the request
         do {
-            let (data, response) = try await URLSession.shared.data(for: request)
+            let (data, response) = try await HardenedNetworkPolicy.session.data(for: request)
 
             if let httpResponse = response as? HTTPURLResponse {
                 let statusCode = httpResponse.statusCode
@@ -930,7 +941,7 @@ final class AIEnhancementSettingsViewModel: ObservableObject {
                         responseData: data
                     )
                     DebugLogger.shared.error(
-                        "testAPIConnection failed: HTTP \(statusCode) for \(providerID), model=\(trimmedModel)\nError: \(errorMessage)\nResponse: \(String(data: data, encoding: .utf8)?.prefix(500) ?? "nil")",
+                        "testAPIConnection failed: HTTP \(statusCode), provider=\(providerID), responseBytes=\(data.count)",
                         source: "AISettingsView"
                     )
                     await MainActor.run {

@@ -14,6 +14,7 @@ enum SimpleUpdateError: Error, LocalizedError {
     case codesignMismatch
     case rollbackUnavailable
     case rollbackRestoreFailed
+    case networkDisabled
 
     var errorDescription: String? {
         switch self {
@@ -28,6 +29,7 @@ enum SimpleUpdateError: Error, LocalizedError {
         case .codesignMismatch: return "Downloaded app’s code signature does not match current app."
         case .rollbackUnavailable: return "No rollback backup is available."
         case .rollbackRestoreFailed: return "Failed to restore a previous version."
+        case .networkDisabled: return "In-app updates are disabled in FluidVoice Hardened."
         }
     }
 }
@@ -115,15 +117,27 @@ final class SimpleUpdater {
     }
 
     func hasRollbackBackup() -> Bool {
+#if HARDENED
+        return false
+#else
         return self.latestRollbackBackup() != nil
+#endif
     }
 
     func latestRollbackVersion() -> String? {
+#if HARDENED
+        return nil
+#else
         guard let latest = self.latestRollbackBackup() else { return nil }
         return self.versionString(for: latest)
+#endif
     }
 
     func rollbackToLatestBackup() async throws {
+#if HARDENED
+        // Hardened build blocks self-replacement through local rollback artifacts.
+        throw SimpleUpdateError.networkDisabled
+#else
         guard let rollbackBundleURL = self.latestRollbackBackup() else {
             throw SimpleUpdateError.rollbackUnavailable
         }
@@ -142,6 +156,7 @@ final class SimpleUpdater {
         } catch {
             throw SimpleUpdateError.rollbackRestoreFailed
         }
+#endif
     }
 
     func fetchRecentReleaseBuildOptions(
@@ -357,6 +372,11 @@ final class SimpleUpdater {
     // MARK: - Helpers
 
     private func fetchReleases(owner: String, repo: String) async throws -> [GHRelease] {
+#if HARDENED
+        _ = owner
+        _ = repo
+        throw SimpleUpdateError.networkDisabled
+#else
         guard let releasesURL = URL(string: "https://api.github.com/repos/\(owner)/\(repo)/releases") else {
             throw SimpleUpdateError.invalidURL
         }
@@ -371,6 +391,7 @@ final class SimpleUpdater {
         } catch {
             throw SimpleUpdateError.jsonDecoding
         }
+#endif
     }
 
     private func selectLatestRelease(from releases: [GHRelease], includePrerelease: Bool) -> GHRelease? {

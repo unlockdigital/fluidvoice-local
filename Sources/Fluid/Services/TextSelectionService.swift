@@ -9,10 +9,11 @@ final class TextSelectionService {
 
     /// Attempts to get the currently selected text using Accessibility APIs
     func getSelectedText() -> String? {
+        guard DirectInputMethodRuntime.isEnabled == false else { return nil }
         self.diag("Selection capture start")
 
         // Check accessibility permissions
-        guard AXIsProcessTrusted() else {
+        guard AccessibilityTrust.isTrusted() else {
             DebugLogger.shared.error("Accessibility permissions not granted", source: "TextSelectionService")
             self.diag("Selection capture failed: Accessibility permissions not granted")
             return nil

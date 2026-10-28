@@ -23,7 +23,7 @@ enum KeychainServiceError: Error, LocalizedError {
 final class KeychainService {
     static let shared = KeychainService()
 
-    private let service = "com.fluidvoice.provider-api-keys"
+    private let service = AppIdentity.keychainService
     private let account = "fluidApiKeys"
 
     private init() {}

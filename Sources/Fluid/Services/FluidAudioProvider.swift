@@ -82,6 +82,21 @@ final class FluidAudioProvider: TranscriptionProvider {
         let loadStart = Date()
         // Download and load models
         let models: AsrModels
+        let asrVersion: AsrModelVersion = selectedModel == .parakeetTDTv2 ? .v2 : .v3
+#if HARDENED
+        // Hardened build = OFFLINE-ONLY: never contact Hugging Face. If a valid local model is
+        // present (preseeded into the cache at launch, or already downloaded), LOAD it directly
+        // (no network listing). If not, fail closed with a clear message — do NOT auto-download.
+        let hardenedCacheDir = AsrModels.defaultCacheDirectory(for: asrVersion)
+        guard AsrModels.modelsExist(at: hardenedCacheDir, version: asrVersion) else {
+            throw NSError(
+                domain: "Hardened",
+                code: -3001,
+                userInfo: [NSLocalizedDescriptionKey: "Offline model missing; use an offline-ready build."]
+            )
+        }
+        models = try await AsrModels.load(from: hardenedCacheDir, version: asrVersion)
+#else
         if selectedModel == .parakeetTDTv2 {
             // Explicitly load v2 (English Only)
             models = try await AsrModels.downloadAndLoad(version: .v2)
@@ -89,6 +104,7 @@ final class FluidAudioProvider: TranscriptionProvider {
             // Default to v3 (Multilingual)
             models = try await AsrModels.downloadAndLoad(version: .v3)
         }
+#endif
         progressTicker.cancel()
         DebugLogger.shared.debug(
             "FluidAudioProvider: Models downloadAndLoad returned in \(String(format: "%.2f", Date().timeIntervalSince(loadStart)))s",
@@ -354,16 +370,12 @@ final class FluidAudioProvider: TranscriptionProvider {
     }
 
     func modelsExistOnDisk() -> Bool {
-        let baseCacheDir = AsrModels.defaultCacheDirectory().deletingLastPathComponent()
         let selectedModel = self.modelOverride ?? SettingsStore.shared.selectedSpeechModel
-
-        if selectedModel == .parakeetTDTv2 {
-            let v2CacheDir = baseCacheDir.appendingPathComponent("parakeet-tdt-0.6b-v2-coreml")
-            return FileManager.default.fileExists(atPath: v2CacheDir.path)
-        } else {
-            let v3CacheDir = baseCacheDir.appendingPathComponent("parakeet-tdt-0.6b-v3-coreml")
-            return FileManager.default.fileExists(atPath: v3CacheDir.path)
-        }
+        // Real artifact validation: required CoreML files + parakeet_vocab.json must be present.
+        // An empty or partial model directory reads as NOT installed (it is NOT enough for the
+        // directory to merely exist).
+        let version: AsrModelVersion = (selectedModel == .parakeetTDTv2) ? .v2 : .v3
+        return AsrModels.modelsExist(at: AsrModels.defaultCacheDirectory(for: version), version: version)
     }
 
     func clearCache() async throws {

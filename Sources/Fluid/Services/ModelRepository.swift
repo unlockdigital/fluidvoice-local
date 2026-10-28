@@ -16,9 +16,13 @@ final class ModelRepository {
 
     /// All built-in provider IDs (not including custom/saved providers)
     static var builtInProviderIDs: [String] {
+#if HARDENED
+        var providers = ["ollama", "lmstudio"]
+#else
         var providers = [
             "openai", "anthropic", "xai", "groq", "cerebras", "google", "openrouter", "ollama", "lmstudio", "apple-intelligence",
         ]
+#endif
         if PrivateFeatures.privateAIProvider {
             providers.insert(PrivateAIProviderFeature.shared.providerID, at: 0)
         }
@@ -139,17 +143,7 @@ final class ModelRepository {
 
     /// Check if a URL represents a local endpoint (localhost, local IP)
     func isLocalEndpoint(_ urlString: String) -> Bool {
-        guard let url = URL(string: urlString), let host = url.host else { return false }
-        let hostLower = host.lowercased()
-        if hostLower == "localhost" || hostLower == "127.0.0.1" { return true }
-        if hostLower.hasPrefix("127.") || hostLower.hasPrefix("10.") || hostLower.hasPrefix("192.168.") { return true }
-        if hostLower.hasPrefix("172.") {
-            let components = hostLower.split(separator: ".")
-            if components.count >= 2, let secondOctet = Int(components[1]), secondOctet >= 16 && secondOctet <= 31 {
-                return true
-            }
-        }
-        return false
+        HardenedNetworkPolicy.isLoopbackEndpoint(urlString)
     }
 
     /// Returns the list of built-in providers for UI pickers
@@ -161,6 +155,12 @@ final class ModelRepository {
         appleIntelligenceAvailable: Bool = false,
         appleIntelligenceDisabledReason: String? = nil
     ) -> [(id: String, name: String)] {
+#if HARDENED
+        var list: [(id: String, name: String)] = [
+            ("ollama", "Ollama"),
+            ("lmstudio", "LM Studio"),
+        ]
+#else
         var list: [(id: String, name: String)] = [
             ("openai", "OpenAI"),
             ("anthropic", "Anthropic"),
@@ -172,11 +172,15 @@ final class ModelRepository {
             ("ollama", "Ollama"),
             ("lmstudio", "LM Studio"),
         ]
+#endif
 
         if PrivateFeatures.privateAIProvider {
             list.insert((PrivateAIProviderFeature.shared.providerID, PrivateAIProviderFeature.shared.providerName), at: 0)
         }
 
+#if HARDENED
+        // Apple Intelligence is not offered in the hardened build.
+#else
         if includeAppleIntelligence {
             if appleIntelligenceAvailable {
                 list.append(("apple-intelligence", "Apple Intelligence"))
@@ -186,6 +190,7 @@ final class ModelRepository {
                 list.append(("apple-intelligence-disabled", "Apple Intelligence (Unavailable)"))
             }
         }
+#endif
 
         return list
     }
@@ -259,6 +264,8 @@ final class ModelRepository {
             throw FetchError.invalidURL(details: "Could not construct valid URL from base: \(baseURL)")
         }
 
+        try HardenedNetworkPolicy.validate(url)
+
         DebugLogger.shared.debug(
             "fetchModels: Fetching models for '\(providerID)' from \(urlString) (isAnthropic=\(isAnthropic))",
             source: "ModelRepository"
@@ -282,7 +289,7 @@ final class ModelRepository {
         let data: Data
         let response: URLResponse
         do {
-            (data, response) = try await URLSession.shared.data(for: request)
+            (data, response) = try await HardenedNetworkPolicy.session.data(for: request)
         } catch {
             let errorDetails = self.detailedNetworkError(error)
             DebugLogger.shared.error(
@@ -297,7 +304,7 @@ final class ModelRepository {
             let bodyString = String(data: data, encoding: .utf8) ?? "<unable to decode response body>"
             let errorDetails = self.rawHTTPErrorDetails(responseBody: bodyString)
             DebugLogger.shared.error(
-                "fetchModels: HTTP \(httpResponse.statusCode) for '\(providerID)': \(errorDetails)\nResponse body: \(bodyString.prefix(500))",
+                "fetchModels: HTTP \(httpResponse.statusCode) for provider=\(providerID), responseBytes=\(data.count)",
                 source: "ModelRepository"
             )
             throw FetchError.httpError(statusCode: httpResponse.statusCode, details: errorDetails)
@@ -305,9 +312,8 @@ final class ModelRepository {
 
         // Parse the response - OpenAI format: { "data": [{ "id": "model-name" }, ...] }
         guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-            let bodyPreview = String(data: data, encoding: .utf8)?.prefix(300) ?? "<binary data>"
             DebugLogger.shared.error(
-                "fetchModels: Failed to parse JSON for '\(providerID)'. Response preview: \(bodyPreview)",
+                "fetchModels: Failed to parse JSON for '\(providerID)', responseBytes=\(data.count)",
                 source: "ModelRepository"
             )
             throw FetchError.invalidResponse(details: "Response is not valid JSON. Check if the base URL '\(baseURL)' is correct.")

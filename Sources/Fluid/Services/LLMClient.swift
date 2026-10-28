@@ -72,7 +72,7 @@ final class LLMClient {
         let config = URLSessionConfiguration.default
         config.timeoutIntervalForRequest = Self.defaultTimeoutSeconds
         config.timeoutIntervalForResource = Self.defaultTimeoutSeconds * 2 // Allow extra time for resource loading
-        self.session = URLSession(configuration: config)
+        self.session = HardenedNetworkPolicy.makeSession(configuration: config)
     }
 
     // MARK: - Response Types
@@ -237,6 +237,13 @@ final class LLMClient {
             throw LLMError.invalidURL
         }
 
+        do {
+            try HardenedNetworkPolicy.validate(url)
+        } catch {
+            DebugLogger.shared.error("LLMClient: blocked endpoint outside the local boundary", source: "LLMClient")
+            throw LLMError.invalidRequest(error.localizedDescription)
+        }
+
         let body = useResponsesAPI ? self.buildResponsesBody(config) : self.buildChatCompletionsBody(config)
 
         // Serialize to JSON
@@ -244,12 +251,9 @@ final class LLMClient {
             throw LLMError.encodingError
         }
 
-        // Log the request for debugging
+        // Log request metadata only — never the request body (it contains prompt/transcript content).
         let messageCount = config.messages.count
-        if let bodyStr = String(data: jsonData, encoding: .utf8) {
-            let truncated = bodyStr.count > 500 ? String(bodyStr.prefix(500)) + "..." : bodyStr
-            DebugLogger.shared.debug("LLMClient: Request (\(messageCount) messages, model=\(config.model), streaming=\(config.streaming)): \(truncated)", source: "LLMClient")
-        }
+        DebugLogger.shared.debug("LLMClient: Request (\(messageCount) messages, model=\(config.model), streaming=\(config.streaming), bytes=\(jsonData.count))", source: "LLMClient")
 
         // Build URLRequest
         var request = URLRequest(url: url)
@@ -472,7 +476,10 @@ final class LLMClient {
 
         if let http = response as? HTTPURLResponse, http.statusCode >= 400 {
             let errText = String(data: data, encoding: .utf8) ?? "Unknown error"
-            DebugLogger.shared.error("LLMClient: HTTP error \(http.statusCode): \(errText.prefix(200))", source: "LLMClient")
+            DebugLogger.shared.error(
+                "LLMClient: HTTP error \(http.statusCode), responseBytes=\(data.count)",
+                source: "LLMClient"
+            )
             throw LLMError.httpError(http.statusCode, errText)
         }
 
@@ -693,12 +700,10 @@ final class LLMClient {
                     // For safety with tag-based parsers, we let the parser decide unless it's a known separate-field model.
                 }
 
-                // Debug: Log first few chunks and any chunk containing think tags
+                // Debug: log chunk metadata only — never the streamed content (it is model output).
                 let containsThinkTag = content.contains("<think") || content.contains("</think") || content.contains("<thinking") || content.contains("</thinking")
                 if thinkingBuffer.count + contentBuffer.count < 8 || containsThinkTag {
-                    let escaped = content.replacingOccurrences(of: "\n", with: "\\n")
-                    let marker = containsThinkTag ? " [HAS THINK TAG!]" : ""
-                    DebugLogger.shared.debug("LLMClient: Chunk '\(escaped)'\(marker)", source: "LLMClient")
+                    DebugLogger.shared.debug("LLMClient: Chunk (chars=\(content.count), hasThinkTag=\(containsThinkTag))", source: "LLMClient")
                 }
 
                 let previousState = state
@@ -999,18 +1004,10 @@ final class LLMClient {
     private func logRequest(_ request: URLRequest) {
         guard let url = request.url, let method = request.httpMethod else { return }
 
-        var bodyString = ""
-        if let body = request.httpBody {
-            bodyString = String(data: body, encoding: .utf8) ?? ""
-        }
-
-        var curl = "curl -X \(method) \"\(url.absoluteString)\" \\\n"
-        for (key, value) in request.allHTTPHeaderFields ?? [:] {
-            let maskedValue = key.lowercased().contains("auth") ? "Bearer [REDACTED]" : value
-            curl += "  -H \"\(key): \(maskedValue)\" \\\n"
-        }
-        curl += "  -d '\(bodyString)'"
-
-        DebugLogger.shared.info("LLMClient: Full Request as cURL:\n\(curl)", source: "LLMClient")
+        // Privacy: never log the request body or a reproducible cURL command — the body
+        // carries prompt/transcript/selected-text content. Log host + method + size only.
+        let host = url.host ?? "unknown-host"
+        let bodyBytes = request.httpBody?.count ?? 0
+        DebugLogger.shared.info("LLMClient: Request \(method) host=\(host) bytes=\(bodyBytes)", source: "LLMClient")
     }
 }

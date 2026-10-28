@@ -16,6 +16,7 @@ final class MenuBarManager: NSObject, ObservableObject, NSMenuDelegate {
 
     // Cached menu items to avoid rebuilding entire menu
     private var statusMenuItem: NSMenuItem?
+    private var restoreInputSourceMenuItem: NSMenuItem?
     private var rollbackMenuItem: NSMenuItem?
     private var microphoneMenuItem: NSMenuItem?
     private var microphoneSubmenu: NSMenu?
@@ -99,6 +100,16 @@ final class MenuBarManager: NSObject, ObservableObject, NSMenuDelegate {
                 }
             }
             .store(in: &self.cancellables)
+
+        if DirectInputMethodRuntime.isEnabled {
+            NotificationCenter.default.publisher(for: .fluidVoiceDirectInputSourceStateChanged)
+                .receive(on: DispatchQueue.main)
+                .sink { [weak self] _ in
+                    self?.updateMenu()
+                }
+                .store(in: &self.cancellables)
+
+        }
     }
 
     private func handleOverlayState(isRunning: Bool, asrService: ASRService) {
@@ -416,6 +427,17 @@ final class MenuBarManager: NSObject, ObservableObject, NSMenuDelegate {
             menu.addItem(statusItem)
         }
 
+        if DirectInputMethodRuntime.isEnabled {
+            let restoreInputSourceMenuItem = NSMenuItem(
+                title: "Restore Fluid Voice Input Source",
+                action: #selector(restoreDirectInputSource(_:)),
+                keyEquivalent: ""
+            )
+            restoreInputSourceMenuItem.target = self
+            menu.addItem(restoreInputSourceMenuItem)
+            self.restoreInputSourceMenuItem = restoreInputSourceMenuItem
+        }
+
         menu.addItem(.separator())
 
         // Open Main Window
@@ -436,6 +458,7 @@ final class MenuBarManager: NSObject, ObservableObject, NSMenuDelegate {
         self.microphoneMenuItem = microphoneMenuItem
         self.microphoneSubmenu = microphoneSubmenu
 
+#if !HARDENED
         // Check for Updates
         let updateItem = NSMenuItem(
             title: "Check for Updates...",
@@ -456,17 +479,19 @@ final class MenuBarManager: NSObject, ObservableObject, NSMenuDelegate {
         rollbackMenuItem.isEnabled = SimpleUpdater.shared.hasRollbackBackup()
         menu.addItem(rollbackMenuItem)
         self.rollbackMenuItem = rollbackMenuItem
+#endif
 
-        menu.addItem(.separator())
+        if DirectInputMethodRuntime.isEnabled == false {
+            menu.addItem(.separator())
 
-        // Quit
-        let quitItem = NSMenuItem(
-            title: "Quit Fluid Voice",
-            action: #selector(NSApplication.terminate(_:)),
-            keyEquivalent: "q"
-        )
-        quitItem.target = NSApp
-        menu.addItem(quitItem)
+            let quitItem = NSMenuItem(
+                title: "Quit Fluid Voice",
+                action: #selector(NSApplication.terminate(_:)),
+                keyEquivalent: "q"
+            )
+            quitItem.target = NSApp
+            menu.addItem(quitItem)
+        }
 
         // Now update the text content
         self.updateMenuItemsText()
@@ -486,8 +511,25 @@ final class MenuBarManager: NSObject, ObservableObject, NSMenuDelegate {
         // Update status text with hotkey info
         let hotkeyShortcut = SettingsStore.shared.hotkeyShortcut
         let hotkeyInfo = hotkeyShortcut.displayString.isEmpty ? "" : " (\(hotkeyShortcut.displayString))"
-        let statusTitle = self.isRecording ? "Recording...\(hotkeyInfo)" : "Ready to Record\(hotkeyInfo)"
+        let statusTitle: String
+        if self.isRecording {
+            statusTitle = "Recording...\(hotkeyInfo)"
+        } else if DirectInputMethodRuntime.isEnabled,
+                  let sourceStatus = DirectInputSourceCoordinator.shared.menuStatusTitle
+        {
+            statusTitle = sourceStatus
+        } else {
+            statusTitle = "Ready to Record\(hotkeyInfo)"
+        }
         self.statusMenuItem?.title = statusTitle
+        if DirectInputMethodRuntime.isEnabled {
+            let sourceState = DirectInputSourceCoordinator.shared.state
+            self.restoreInputSourceMenuItem?.isHidden = sourceState == .active
+            self.restoreInputSourceMenuItem?.isEnabled = sourceState != .restoring
+            self.restoreInputSourceMenuItem?.title = sourceState == .secureInput
+                ? "Recover Fluid Voice..."
+                : "Restore Fluid Voice Input Source"
+        }
         self.microphoneMenuItem?.isEnabled = true
 
         // Update rollback availability text
@@ -496,9 +538,129 @@ final class MenuBarManager: NSObject, ObservableObject, NSMenuDelegate {
 
     func menuWillOpen(_ menu: NSMenu) {
         if menu === self.menu {
+            if DirectInputMethodRuntime.isEnabled {
+                DirectInputSourceCoordinator.shared.refreshState(reason: "menu-open")
+            }
             self.updateMenuItemsText()
             self.refreshMicrophoneMenu()
         }
+    }
+
+    @objc private func restoreDirectInputSource(_ sender: Any?) {
+        let coordinator = DirectInputSourceCoordinator.shared
+        coordinator.refreshState(reason: "manual-recovery")
+
+        if coordinator.state == .secureInput {
+            self.presentSecureInputRecovery(coordinator: coordinator)
+            return
+        }
+
+        coordinator.requestRestore()
+        self.updateMenuItemsText()
+    }
+
+    private func presentSecureInputRecovery(coordinator: DirectInputSourceCoordinator) {
+        guard let owner = coordinator.secureInputOwner() else {
+            self.presentRecoveryAlert(
+                title: "macOS Secure Keyboard Input Is Active",
+                message: "Leave the password or payment field in the application you last used. Fluid Voice restores automatically after the secure field releases the keyboard. If the lock remains, save your work and sign out of macOS or restart the Mac."
+            )
+            return
+        }
+
+        guard owner.isRunning else {
+            self.presentRecoveryAlert(
+                title: "macOS Kept a Stale Secure Keyboard Lock",
+                message: "\(owner.applicationName) has already closed, and macOS still records its old process as the Secure Input owner. Save your work and sign out of macOS or restart the Mac. Fluid Voice restores after login."
+            )
+            return
+        }
+
+        guard owner.processIdentifier != ProcessInfo.processInfo.processIdentifier,
+              owner.bundleIdentifier != Bundle.main.bundleIdentifier
+        else {
+            self.presentRecoveryAlert(
+                title: "macOS Secure Keyboard Input Is Active",
+                message: "Leave the secure field, then return to an ordinary editable field. Fluid Voice restores automatically after macOS releases the keyboard."
+            )
+            return
+        }
+
+        let alert = NSAlert()
+        alert.alertStyle = .warning
+        alert.messageText = "\(owner.applicationName) Is Blocking Fluid Voice"
+        alert.informativeText = "Open \(owner.applicationName), press Command-L or click outside the password field, then return to your work. Fluid Voice restores automatically. You can also ask \(owner.applicationName) to quit normally and recover Fluid Voice; save any form text first."
+        alert.addButton(withTitle: "Open \(owner.applicationName)")
+        alert.addButton(withTitle: "Quit \(owner.applicationName) & Recover")
+        alert.addButton(withTitle: "Cancel")
+        NSApp.activate(ignoringOtherApps: true)
+
+        switch alert.runModal() {
+        case .alertFirstButtonReturn:
+            NSRunningApplication(processIdentifier: owner.processIdentifier)?.activate(
+                options: [.activateAllWindows]
+            )
+        case .alertSecondButtonReturn:
+            self.quitSecureInputOwnerAndRecover(owner)
+        default:
+            break
+        }
+    }
+
+    private func quitSecureInputOwnerAndRecover(
+        _ owner: DirectInputSourceCoordinator.SecureInputOwner
+    ) {
+        guard let application = NSRunningApplication(processIdentifier: owner.processIdentifier),
+              application.terminate()
+        else {
+            self.presentRecoveryAlert(
+                title: "\(owner.applicationName) Stayed Open",
+                message: "Quit \(owner.applicationName) from its application menu, then choose Recover Fluid Voice again."
+            )
+            return
+        }
+
+        Task { @MainActor [weak self] in
+            let coordinator = DirectInputSourceCoordinator.shared
+            for _ in 0..<20 {
+                try? await Task.sleep(nanoseconds: 500_000_000)
+                if coordinator.secureInputIsActive == false {
+                    coordinator.requestRestore()
+                    for _ in 0..<12 {
+                        try? await Task.sleep(nanoseconds: 500_000_000)
+                        if coordinator.state == .active {
+                            self?.updateMenuItemsText()
+                            self?.presentRecoveryAlert(
+                                title: "Fluid Voice Is Ready",
+                                message: "Right Option is active again. You can reopen \(owner.applicationName) when you are ready."
+                            )
+                            return
+                        }
+                    }
+
+                    self?.presentRecoveryAlert(
+                        title: "Fluid Voice Needs One More Restore",
+                        message: "Secure Keyboard Input cleared. Choose Restore Fluid Voice Input Source from the Fluid Voice menu once more."
+                    )
+                    return
+                }
+            }
+
+            self?.presentRecoveryAlert(
+                title: "macOS Kept the Secure Keyboard Lock",
+                message: "\(owner.applicationName) closed, and the macOS session kept its Secure Input lock. Save your work and sign out of macOS or restart the Mac. Fluid Voice restores after login."
+            )
+        }
+    }
+
+    private func presentRecoveryAlert(title: String, message: String) {
+        let alert = NSAlert()
+        alert.alertStyle = .informational
+        alert.messageText = title
+        alert.informativeText = message
+        alert.addButton(withTitle: "OK")
+        NSApp.activate(ignoringOtherApps: true)
+        alert.runModal()
     }
 
     private func refreshMicrophoneMenu() {

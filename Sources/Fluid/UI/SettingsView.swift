@@ -210,6 +210,7 @@ struct SettingsView: View {
                                 errorMessage: self.settings.launchAtStartupErrorMessage,
                                 isOn: self.launchAtStartupBinding
                             )
+#if !HARDENED
                             Divider().opacity(0.2)
 
                             // Show window when launched at login
@@ -529,6 +530,7 @@ struct SettingsView: View {
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                             }
+#endif
                         }
                     }
                     .padding(16)

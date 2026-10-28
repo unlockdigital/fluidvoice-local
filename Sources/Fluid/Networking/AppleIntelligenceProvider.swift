@@ -45,6 +45,10 @@ enum AppleIntelligenceService {
 final class AppleIntelligenceProvider {
     /// Process text with a system prompt (for transcription enhancement)
     func process(systemPrompt: String, userText: String) async throws -> String {
+#if HARDENED
+        // Apple Intelligence is disabled in the hardened build (use a local LLM provider).
+        throw NSError(domain: "Hardened", code: -1, userInfo: [NSLocalizedDescriptionKey: "Apple Intelligence is disabled in the hardened build."])
+#else
         let session = LanguageModelSession()
 
         let fullPrompt = """
@@ -55,10 +59,14 @@ final class AppleIntelligenceProvider {
 
         let response = try await session.respond(to: fullPrompt)
         return response.content
+#endif
     }
 
     /// Process rewrite/write requests with conversation history
     func processRewrite(messages: [(role: String, content: String)], systemPrompt: String) async throws -> String {
+#if HARDENED
+        throw NSError(domain: "Hardened", code: -1, userInfo: [NSLocalizedDescriptionKey: "Apple Intelligence is disabled in the hardened build."])
+#else
         let session = LanguageModelSession()
 
         // Build the conversation as a single prompt since FoundationModels
@@ -81,6 +89,7 @@ final class AppleIntelligenceProvider {
 
         let response = try await session.respond(to: fullPrompt)
         return response.content
+#endif
     }
 }
 #endif

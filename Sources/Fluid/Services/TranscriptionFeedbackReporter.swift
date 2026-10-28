@@ -12,6 +12,7 @@ enum TranscriptionFeedbackReporter {
         case invalidURL
         case invalidResponse
         case httpError(Int)
+        case disabledInHardenedBuild
 
         var errorDescription: String? {
             switch self {
@@ -21,6 +22,8 @@ enum TranscriptionFeedbackReporter {
                 return "Invalid report response."
             case let .httpError(statusCode):
                 return "Report failed with HTTP \(statusCode)."
+            case .disabledInHardenedBuild:
+                return "Transcription feedback is disabled in FluidVoice Hardened."
             }
         }
     }
@@ -28,6 +31,10 @@ enum TranscriptionFeedbackReporter {
     private static let endpoint = "https://altic.dev/api/fluid/examples"
 
     static func submit(_ payload: Payload) async throws {
+#if HARDENED
+        _ = payload
+        throw ReporterError.disabledInHardenedBuild
+#else
         guard let url = URL(string: self.endpoint) else {
             throw ReporterError.invalidURL
         }
@@ -45,5 +52,6 @@ enum TranscriptionFeedbackReporter {
         guard (200...299).contains(httpResponse.statusCode) else {
             throw ReporterError.httpError(httpResponse.statusCode)
         }
+#endif
     }
 }

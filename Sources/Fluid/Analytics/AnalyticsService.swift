@@ -15,21 +15,33 @@ final class AnalyticsService {
 
     /// Call once at startup. Cheap and does not start networking unless configured + enabled.
     func bootstrap() {
+#if HARDENED
+        // Hardened build: telemetry is disabled at the source. No queue, no flush loop, no network.
+        return
+#else
         let enabled = SettingsStore.shared.shareAnonymousAnalytics
         let config = AnalyticsConfig.fromBundle()
         Task.detached(priority: .background) { [core] in
             await core.bootstrap(enabled: enabled, config: config)
         }
+#endif
     }
 
     func setEnabled(_ enabled: Bool) {
+#if HARDENED
+        return
+#else
         let config = AnalyticsConfig.fromBundle()
         Task.detached(priority: .background) { [core] in
             await core.setEnabled(enabled, config: config)
         }
+#endif
     }
 
     func capture(_ event: AnalyticsEvent, properties: [String: Any] = [:]) {
+#if HARDENED
+        return
+#else
         // Capture should be as close to O(1) as possible on the caller thread.
         // We compute common properties quickly (no heavy work, no content).
         let common = AnalyticsService.commonProperties()
@@ -48,6 +60,7 @@ final class AnalyticsService {
                 properties: merged
             )
         }
+#endif
     }
 
     // MARK: - Common props (low-cardinality only)
@@ -279,6 +292,10 @@ private actor AnalyticsCore {
     }
 
     private func sendBatch(_ batch: [[String: Any]]) async {
+#if HARDENED
+        _ = batch
+        return
+#else
         // Fire-and-forget network request; do not await response.
         let host = self.config.postHogHost
         let apiKey = self.config.postHogApiKey
@@ -311,5 +328,6 @@ private actor AnalyticsCore {
             let session = URLSession.shared
             _ = try? await session.data(for: request)
         }
+#endif
     }
 }

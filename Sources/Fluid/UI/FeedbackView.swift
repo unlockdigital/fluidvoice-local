@@ -336,6 +336,10 @@ struct FeedbackView: View {
     }
 
     private func submitFeedback(data: [String: Any]) async -> Bool {
+#if HARDENED
+        _ = data
+        return false
+#else
         guard let url = URL(string: "https://altic.dev/api/fluid/feedback") else {
             DebugLogger.shared.error("Invalid feedback API URL", source: "FeedbackView")
             return false
@@ -369,6 +373,7 @@ struct FeedbackView: View {
             )
             return false
         }
+#endif
     }
 }
 

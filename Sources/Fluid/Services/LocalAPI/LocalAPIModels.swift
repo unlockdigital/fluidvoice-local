@@ -11,11 +11,16 @@ enum LocalAPI {
         static var current: Configuration {
             let defaults = UserDefaults.standard
             let enabled: Bool
+#if HARDENED
+            // Hardened build: Local API is permanently disabled regardless of stored settings.
+            enabled = false
+#else
             if defaults.object(forKey: "LocalAPIEnabled") == nil {
                 enabled = false
             } else {
                 enabled = defaults.bool(forKey: "LocalAPIEnabled")
             }
+#endif
 
             let rawPort = defaults.integer(forKey: "LocalAPIPort")
             let port = rawPort > 0 && rawPort <= Int(UInt16.max) ? UInt16(rawPort) : LocalAPI.defaultPort

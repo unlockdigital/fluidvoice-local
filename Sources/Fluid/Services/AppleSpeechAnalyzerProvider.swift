@@ -196,7 +196,8 @@ final class AppleSpeechAnalyzerProvider: TranscriptionProvider {
             DebugLogger.shared.debug("AppleSpeechAnalyzer: Results task started, waiting for results...", source: "AppleSpeechAnalyzerProvider")
             for try await case let result in freshTranscriber.results {
                 let text = String(result.text.characters)
-                DebugLogger.shared.debug("AppleSpeechAnalyzer: Got result - isFinal: \(result.isFinal), text: '\(text)'", source: "AppleSpeechAnalyzerProvider")
+                // Privacy: log length only, never transcript text.
+                DebugLogger.shared.debug("AppleSpeechAnalyzer: Got result - isFinal: \(result.isFinal), chars=\(text.count)", source: "AppleSpeechAnalyzerProvider")
                 if result.isFinal {
                     // ACCUMULATE results (per Apple's pattern) - don't break!
                     if !finalText.isEmpty && !text.isEmpty {
@@ -206,7 +207,7 @@ final class AppleSpeechAnalyzerProvider: TranscriptionProvider {
                 }
                 // Continue iterating until stream ends (after finalizeAndFinish)
             }
-            DebugLogger.shared.debug("AppleSpeechAnalyzer: Results iteration complete, accumulated: '\(finalText)'", source: "AppleSpeechAnalyzerProvider")
+            DebugLogger.shared.debug("AppleSpeechAnalyzer: Results iteration complete (chars=\(finalText.count))", source: "AppleSpeechAnalyzerProvider")
         }
 
         // 7. Start the analyzer (this kicks off processing)
@@ -235,7 +236,7 @@ final class AppleSpeechAnalyzerProvider: TranscriptionProvider {
             DebugLogger.shared.warning("Speech recognition error: \(error.localizedDescription)", source: "AppleSpeechAnalyzerProvider")
         }
 
-        DebugLogger.shared.debug("AppleSpeechAnalyzer: Transcription complete - result: '\(finalText)'", source: "AppleSpeechAnalyzerProvider")
+        DebugLogger.shared.debug("AppleSpeechAnalyzer: Transcription complete (chars=\(finalText.count))", source: "AppleSpeechAnalyzerProvider")
         return ASRTranscriptionResult(text: finalText, confidence: 1.0)
     }
 

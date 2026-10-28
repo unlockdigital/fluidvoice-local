@@ -145,35 +145,7 @@ final class FunctionCallingProvider {
 
     // Helper function to detect if the endpoint is local
     private func isLocalEndpoint(_ urlString: String) -> Bool {
-        guard let url = URL(string: urlString),
-              let host = url.host else { return false }
-
-        let hostLower = host.lowercased()
-
-        // Check for localhost variations
-        if hostLower == "localhost" || hostLower == "127.0.0.1" {
-            return true
-        }
-
-        // Check for private IP ranges
-        if hostLower.hasPrefix("127.") || hostLower.hasPrefix("10.") ||
-            hostLower.hasPrefix("192.168.")
-        {
-            return true
-        }
-
-        // 172.16.x.x - 172.31.x.x
-        if hostLower.hasPrefix("172.") {
-            let components = hostLower.split(separator: ".")
-            if components.count >= 2,
-               let secondOctet = Int(components[1]),
-               secondOctet >= 16 && secondOctet <= 31
-            {
-                return true
-            }
-        }
-
-        return false
+        HardenedNetworkPolicy.isLoopbackEndpoint(urlString)
     }
 
     /// Process user input with LLM and MCP tools
@@ -204,6 +176,12 @@ final class FunctionCallingProvider {
         }
 
         let isLocal = self.isLocalEndpoint(endpoint)
+        do {
+            try HardenedNetworkPolicy.validate(url)
+        } catch {
+            DebugLogger.shared.error("FunctionCallingProvider: blocked endpoint outside the local boundary", source: "FunctionCallingProvider")
+            return .error(error.localizedDescription)
+        }
 
         // Build messages array
         var messages = conversationHistory
@@ -235,10 +213,8 @@ final class FunctionCallingProvider {
             return .error("Failed to encode request")
         }
 
-        // Debug: Log request payload
-        if let requestString = String(data: jsonData, encoding: .utf8) {
-            DebugLogger.shared.debug("Request JSON: \(requestString)", source: "FunctionCallingProvider")
-        }
+        // Privacy: log request size only — never the request body (it carries prompt content).
+        DebugLogger.shared.debug("Request prepared (bytes=\(jsonData.count))", source: "FunctionCallingProvider")
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
@@ -252,17 +228,15 @@ final class FunctionCallingProvider {
         request.httpBody = jsonData
 
         do {
-            let (data, response) = try await URLSession.shared.data(for: request)
+            let (data, response) = try await HardenedNetworkPolicy.session.data(for: request)
 
-            // Log response
-            if let responseString = String(data: data, encoding: .utf8) {
-                DebugLogger.shared.debug("📥 LLM Response: \(responseString)", source: "FunctionCallingProvider")
-            }
+            // Privacy: log response size only — never the response body (it carries model output).
+            DebugLogger.shared.debug("LLM response received (bytes=\(data.count))", source: "FunctionCallingProvider")
 
             if let http = response as? HTTPURLResponse, http.statusCode >= 400 {
-                let errText = String(data: data, encoding: .utf8) ?? "Unknown error"
-                DebugLogger.shared.error("HTTP \(http.statusCode): \(errText)", source: "FunctionCallingProvider")
-                return .error("HTTP \(http.statusCode): \(errText)")
+                // Log the status code only; the error body may echo prompt content.
+                DebugLogger.shared.error("HTTP \(http.statusCode)", source: "FunctionCallingProvider")
+                return .error("HTTP \(http.statusCode)")
             }
 
             let decoded = try JSONDecoder().decode(ChatResponse.self, from: data)
@@ -283,8 +257,9 @@ final class FunctionCallingProvider {
                 var parsedCalls: [(name: String, arguments: [String: Any], callId: String)] = []
 
                 for toolCall in toolCalls {
+                    // Privacy: log the tool name only — arguments may carry user content.
                     DebugLogger.shared.info(
-                        "  → \(toolCall.function.name)(\(toolCall.function.arguments))",
+                        "  → \(toolCall.function.name)(…)",
                         source: "FunctionCallingProvider"
                     )
                     // Parse arguments JSON string
@@ -344,6 +319,12 @@ final class FunctionCallingProvider {
         }
 
         let isLocal = self.isLocalEndpoint(endpoint)
+        do {
+            try HardenedNetworkPolicy.validate(url)
+        } catch {
+            DebugLogger.shared.error("FunctionCallingProvider: blocked endpoint outside the local boundary", source: "FunctionCallingProvider")
+            return .error(error.localizedDescription)
+        }
 
         // Use conversation history as-is (tool messages should already be added by caller)
         let messages = conversationHistory
@@ -377,12 +358,12 @@ final class FunctionCallingProvider {
         request.httpBody = jsonData
 
         do {
-            let (data, response) = try await URLSession.shared.data(for: request)
+            let (data, response) = try await HardenedNetworkPolicy.session.data(for: request)
 
             if let http = response as? HTTPURLResponse, http.statusCode >= 400 {
                 let errText = String(data: data, encoding: .utf8) ?? "Unknown error"
                 DebugLogger.shared.error(
-                    "HTTP \(http.statusCode) in continueWithToolResults: \(errText)",
+                    "HTTP \(http.statusCode) in continueWithToolResults, responseBytes=\(data.count)",
                     source: "FunctionCallingProvider"
                 )
                 return .error("HTTP \(http.statusCode): \(errText)")

@@ -17,15 +17,9 @@ class DebugLogger: ObservableObject {
         if let cached = _loggingEnabledCache {
             return cached
         }
-        // Delay access to SettingsStore until after initial singleton setup
-        // Use UserDefaults directly to avoid the circular dependency
-        let defaults = UserDefaults.standard
-        let enabled: Bool
-        if defaults.object(forKey: "EnableDebugLogs") == nil {
-            enabled = true
-        } else {
-            enabled = defaults.bool(forKey: "EnableDebugLogs")
-        }
+        // Delay access to SettingsStore until after initial singleton setup; read the
+        // shared fail-closed flag (UserDefaults-backed) to avoid the circular dependency.
+        let enabled = DiagnosticLogging.isEnabled
         self._loggingEnabledCache = enabled
         return enabled
     }
@@ -75,16 +69,15 @@ class DebugLogger: ObservableObject {
 
     /// Refresh the cached logging setting (call after SettingsStore is fully initialized)
     func refreshLoggingEnabled() {
-        let defaults = UserDefaults.standard
-        if defaults.object(forKey: "EnableDebugLogs") == nil {
-            self._loggingEnabledCache = true
-        } else {
-            self._loggingEnabledCache = defaults.bool(forKey: "EnableDebugLogs")
-        }
+        self._loggingEnabledCache = DiagnosticLogging.isEnabled
     }
 
     func log(_ message: String, level: LogLevel = .info, source: String = "App") {
         let loggingEnabled = self.loggingEnabled
+
+        // Fail closed: when diagnostic logging is disabled, write NOTHING — no file, no
+        // stdout, no in-app panel. Crash diagnostics use a separate path in FileLogger.
+        guard loggingEnabled else { return }
 
         self.queue.async {
             let timestamp = Date()
@@ -92,12 +85,8 @@ class DebugLogger: ObservableObject {
 
             let formattedLine = self.formatLogLine(timestamp: timestampString, level: level, source: source, message: message)
 
-            // Always persist diagnostics so issues can be debugged even if UI debug mode is off.
             FileLogger.shared.append(line: formattedLine)
             print(formattedLine)
-
-            // UI log panel still respects the in-app debug toggle.
-            guard loggingEnabled else { return }
 
             let entry = LogEntry(
                 timestamp: timestamp,

@@ -23,6 +23,7 @@ final class SettingsStore: ObservableObject {
         "FluidVoice reflects the actual macOS login item state. Unsigned or development builds may fail to enable this."
 
     private init() {
+        self.enforceHardenedDefaults()
         self.migrateTranscriptionStartSoundIfNeeded()
         self.ensureDebugLoggingDefaults()
         self.migrateProviderAPIKeysIfNeeded()
@@ -329,18 +330,38 @@ final class SettingsStore: ObservableObject {
     }
 
     var isDictationPromptOff: Bool {
-        get { self.defaults.bool(forKey: Keys.dictationPromptOff) }
+        get {
+#if HARDENED
+            return true
+#else
+            return self.defaults.bool(forKey: Keys.dictationPromptOff)
+#endif
+        }
         set {
             objectWillChange.send()
+#if HARDENED
+            self.defaults.set(true, forKey: Keys.dictationPromptOff)
+#else
             self.defaults.set(newValue, forKey: Keys.dictationPromptOff)
+#endif
         }
     }
 
     var isEditPromptOff: Bool {
-        get { self.defaults.bool(forKey: Keys.editPromptOff) }
+        get {
+#if HARDENED
+            return true
+#else
+            return self.defaults.bool(forKey: Keys.editPromptOff)
+#endif
+        }
         set {
             objectWillChange.send()
+#if HARDENED
+            self.defaults.set(true, forKey: Keys.editPromptOff)
+#else
             self.defaults.set(newValue, forKey: Keys.editPromptOff)
+#endif
         }
     }
 
@@ -1245,10 +1266,20 @@ final class SettingsStore: ObservableObject {
     }
 
     var enableAIProcessing: Bool {
-        get { self.defaults.bool(forKey: Keys.enableAIProcessing) }
+        get {
+#if HARDENED
+            return false
+#else
+            return self.defaults.bool(forKey: Keys.enableAIProcessing)
+#endif
+        }
         set {
             objectWillChange.send()
+#if HARDENED
+            self.defaults.set(false, forKey: Keys.enableAIProcessing)
+#else
             self.defaults.set(newValue, forKey: Keys.enableAIProcessing)
+#endif
         }
     }
 
@@ -1268,17 +1299,25 @@ final class SettingsStore: ObservableObject {
         }
     }
 
-    /// Anonymous analytics toggle (default: ON). Uses default-true semantics so existing installs
-    /// upgrading to a version that includes analytics do not silently default to OFF.
+    /// Anonymous analytics toggle (default: OFF in the hardened build). Fails closed: a missing
+    /// stored value resolves to OFF, and the hardened build forces OFF regardless of any stored value.
     var shareAnonymousAnalytics: Bool {
         get {
+#if HARDENED
+            return false
+#else
             let value = self.defaults.object(forKey: Keys.shareAnonymousAnalytics)
-            if value == nil { return true }
+            if value == nil { return false }
             return self.defaults.bool(forKey: Keys.shareAnonymousAnalytics)
+#endif
         }
         set {
             objectWillChange.send()
+#if HARDENED
+            self.defaults.set(false, forKey: Keys.shareAnonymousAnalytics)
+#else
             self.defaults.set(newValue, forKey: Keys.shareAnonymousAnalytics)
+#endif
         }
     }
 
@@ -1308,22 +1347,81 @@ final class SettingsStore: ObservableObject {
 
     var enableDebugLogs: Bool {
         get {
+#if HARDENED
+            return false
+#else
+            // Fail closed: default OFF when unset. Disabled logging suppresses all file
+            // and stdout writes (see DebugLogger / FileLogger).
             let value = self.defaults.object(forKey: Keys.enableDebugLogs)
-            if value == nil { return true }
+            if value == nil { return false }
             return self.defaults.bool(forKey: Keys.enableDebugLogs)
+#endif
         }
         set {
             objectWillChange.send()
+#if HARDENED
+            self.defaults.set(false, forKey: Keys.enableDebugLogs)
+#else
             self.defaults.set(newValue, forKey: Keys.enableDebugLogs)
+#endif
             DebugLogger.shared.refreshLoggingEnabled()
+        }
+    }
+
+    /// Whether non-local (cloud) LLM providers are permitted for post-processing.
+    ///
+    /// The hardened build forces this OFF. Post-processing can reach exact loopback addresses
+    /// through the central network policy; LAN and internet destinations remain blocked.
+    var allowCloudProviders: Bool {
+        get {
+#if HARDENED
+            return false
+#else
+            let value = self.defaults.object(forKey: Keys.allowCloudProviders)
+            return value as? Bool ?? false
+#endif
+        }
+        set {
+            objectWillChange.send()
+#if HARDENED
+            self.defaults.set(false, forKey: Keys.allowCloudProviders)
+#else
+            self.defaults.set(newValue, forKey: Keys.allowCloudProviders)
+#endif
         }
     }
 
     private func ensureDebugLoggingDefaults() {
         if self.defaults.object(forKey: Keys.enableDebugLogs) == nil {
-            self.defaults.set(true, forKey: Keys.enableDebugLogs)
+            self.defaults.set(false, forKey: Keys.enableDebugLogs)
         }
         DebugLogger.shared.refreshLoggingEnabled()
+    }
+
+    /// Central fail-closed enforcement of the hardened privacy posture.
+    ///
+    /// Runs first in `init()`, before any UI or service reads settings. Privacy-critical
+    /// getters also hard-override via `#if HARDENED`; writing the stored values here keeps
+    /// the persisted state and any settings UI consistent with that posture. Later hardening
+    /// phases (logging, history, Command Mode, Local API) extend this method.
+    private func enforceHardenedDefaults() {
+#if HARDENED
+        self.defaults.set(false, forKey: Keys.shareAnonymousAnalytics)
+        self.defaults.set(false, forKey: Keys.autoUpdateCheckEnabled)
+        self.defaults.set(false, forKey: Keys.enableDebugLogs)
+        self.defaults.set(false, forKey: Keys.saveTranscriptionHistory)
+        self.defaults.set(false, forKey: Keys.saveAudioWithTranscriptionHistory)
+        self.defaults.set(false, forKey: Keys.commandModeShortcutEnabled)
+        self.defaults.set(false, forKey: Keys.allowCloudProviders)
+        self.defaults.set(false, forKey: Keys.enableAIProcessing)
+        self.defaults.set(true, forKey: Keys.dictationPromptOff)
+        self.defaults.set(true, forKey: Keys.editPromptOff)
+        self.defaults.set(true, forKey: Keys.secondaryDictationPromptOff)
+        self.defaults.set(false, forKey: Keys.promptModeShortcutEnabled)
+        self.defaults.set(false, forKey: Keys.rewriteModeShortcutEnabled)
+        self.defaults.set(false, forKey: "LocalAPIEnabled")
+        self.defaults.set(SpeechModel.parakeetTDTv2.rawValue, forKey: Keys.selectedSpeechModel)
+#endif
     }
 
     var selectedModel: String? {
@@ -1343,7 +1441,13 @@ final class SettingsStore: ObservableObject {
     }
 
     var providerAPIKeys: [String: String] {
-        get { (try? self.keychain.fetchAllKeys()) ?? [:] }
+        get {
+#if HARDENED
+            return [:]
+#else
+            return (try? self.keychain.fetchAllKeys()) ?? [:]
+#endif
+        }
         set {
             objectWillChange.send()
             do {
@@ -1356,9 +1460,14 @@ final class SettingsStore: ObservableObject {
 
     @discardableResult
     func saveProviderAPIKeys(_ values: [String: String]) throws -> [String: String] {
+#if HARDENED
+        _ = values
+        return [:]
+#else
         let trimmed = self.sanitizeAPIKeys(values)
         try self.keychain.storeAllKeys(trimmed)
         return try self.keychain.fetchAllKeys()
+#endif
     }
 
     /// Securely retrieve API key for a provider, handling custom prefix logic
@@ -1949,11 +2058,21 @@ final class SettingsStore: ObservableObject {
 
     var autoUpdateCheckEnabled: Bool {
         get {
+#if HARDENED
+            // Hardened build: no background update checks. Update network calls are disabled
+            // during the local-only trial; updates are a manual, documented step.
+            return false
+#else
             let value = self.defaults.object(forKey: Keys.autoUpdateCheckEnabled)
-            return value as? Bool ?? true // Default to enabled
+            return value as? Bool ?? false // Default to disabled (fail closed)
+#endif
         }
         set {
+#if HARDENED
+            self.defaults.set(false, forKey: Keys.autoUpdateCheckEnabled)
+#else
             self.defaults.set(newValue, forKey: Keys.autoUpdateCheckEnabled)
+#endif
         }
     }
 
@@ -2231,12 +2350,20 @@ final class SettingsStore: ObservableObject {
 
     var promptModeShortcutEnabled: Bool {
         get {
+#if HARDENED
+            return false
+#else
             let value = self.defaults.object(forKey: Keys.promptModeShortcutEnabled)
             return value as? Bool ?? false
+#endif
         }
         set {
             objectWillChange.send()
+#if HARDENED
+            self.defaults.set(false, forKey: Keys.promptModeShortcutEnabled)
+#else
             self.defaults.set(newValue, forKey: Keys.promptModeShortcutEnabled)
+#endif
         }
     }
 
@@ -2275,23 +2402,40 @@ final class SettingsStore: ObservableObject {
 
     var isSecondaryDictationPromptOff: Bool {
         get {
+#if HARDENED
+            return true
+#else
             let value = self.defaults.object(forKey: Keys.secondaryDictationPromptOff)
             return value as? Bool ?? false
+#endif
         }
         set {
             objectWillChange.send()
+#if HARDENED
+            self.defaults.set(true, forKey: Keys.secondaryDictationPromptOff)
+#else
             self.defaults.set(newValue, forKey: Keys.secondaryDictationPromptOff)
+#endif
         }
     }
 
     var commandModeShortcutEnabled: Bool {
         get {
+#if HARDENED
+            // Hardened build: Command Mode is disabled (shell execution path is also guarded).
+            return false
+#else
             let value = self.defaults.object(forKey: Keys.commandModeShortcutEnabled)
-            return value as? Bool ?? true
+            return value as? Bool ?? false // Fail closed: default OFF
+#endif
         }
         set {
             objectWillChange.send()
+#if HARDENED
+            self.defaults.set(false, forKey: Keys.commandModeShortcutEnabled)
+#else
             self.defaults.set(newValue, forKey: Keys.commandModeShortcutEnabled)
+#endif
         }
     }
 
@@ -2474,12 +2618,20 @@ final class SettingsStore: ObservableObject {
 
     var rewriteModeShortcutEnabled: Bool {
         get {
+#if HARDENED
+            return false
+#else
             let value = self.defaults.object(forKey: Keys.rewriteModeShortcutEnabled)
             return value as? Bool ?? true
+#endif
         }
         set {
             objectWillChange.send()
+#if HARDENED
+            self.defaults.set(false, forKey: Keys.rewriteModeShortcutEnabled)
+#else
             self.defaults.set(newValue, forKey: Keys.rewriteModeShortcutEnabled)
+#endif
         }
     }
 
@@ -2579,24 +2731,42 @@ final class SettingsStore: ObservableObject {
     /// When disabled, transcriptions are not stored and stats won't update
     var saveTranscriptionHistory: Bool {
         get {
+#if HARDENED
+            // Hardened build: no dictation history is retained during the local-only trial.
+            return false
+#else
+            // Fail closed: default OFF when unset.
             let value = self.defaults.object(forKey: Keys.saveTranscriptionHistory)
-            return value as? Bool ?? true // Default to true (save history)
+            return value as? Bool ?? false
+#endif
         }
         set {
             objectWillChange.send()
+#if HARDENED
+            self.defaults.set(false, forKey: Keys.saveTranscriptionHistory)
+#else
             self.defaults.set(newValue, forKey: Keys.saveTranscriptionHistory)
+#endif
         }
     }
 
     /// Stores actual microphone audio locally alongside dictation history.
     var saveAudioWithTranscriptionHistory: Bool {
         get {
+#if HARDENED
+            return false
+#else
             let value = self.defaults.object(forKey: Keys.saveAudioWithTranscriptionHistory)
             return value as? Bool ?? false
+#endif
         }
         set {
             objectWillChange.send()
+#if HARDENED
+            self.defaults.set(false, forKey: Keys.saveAudioWithTranscriptionHistory)
+#else
             self.defaults.set(newValue, forKey: Keys.saveAudioWithTranscriptionHistory)
+#endif
         }
     }
 
@@ -2808,6 +2978,7 @@ final class SettingsStore: ObservableObject {
         self.promptModeSelectedPromptID = payload.promptModeSelectedPromptID
         self.isSecondaryDictationPromptOff = payload.secondaryDictationPromptOff ?? false
         self.normalizePromptSelectionsIfNeeded()
+        self.enforceHardenedDefaults()
     }
 
     // MARK: - Private Methods
@@ -3661,6 +3832,9 @@ final class SettingsStore: ObservableObject {
 
         /// Returns models available for the current Mac's architecture and OS
         static var availableModels: [SpeechModel] {
+#if HARDENED
+            return CPUArchitecture.isAppleSilicon ? [.parakeetTDTv2] : []
+#else
             allCases.filter { model in
                 if model == .whisperLargeTurbo {
                     return false
@@ -3689,11 +3863,18 @@ final class SettingsStore: ObservableObject {
                 }
                 return true
             }
+#endif
         }
 
         /// Default model for the current architecture
         static var defaultModel: SpeechModel {
-            CPUArchitecture.isAppleSilicon ? .parakeetTDT : .whisperBase
+#if HARDENED
+            // Hardened build preseeds Parakeet TDT v2 (English) for offline-first ASR, so the
+            // default matches the bundled model and works with no Hugging Face contact.
+            return CPUArchitecture.isAppleSilicon ? .parakeetTDTv2 : .whisperBase
+#else
+            return CPUArchitecture.isAppleSilicon ? .parakeetTDT : .whisperBase
+#endif
         }
 
         // MARK: - UI Card Metadata
@@ -3999,13 +4180,23 @@ final class SettingsStore: ObservableObject {
             case .appleSpeech, .appleSpeechAnalyzer:
                 return true
             case .parakeetTDT:
-                // Hardcoded path check for NVIDIA v3
-                return Self.parakeetCacheDirectory(version: "parakeet-tdt-0.6b-v3-coreml")
+                // Real artifact validation (required CoreML files + parakeet_vocab.json), not a
+                // bare directory check — an empty/partial download must read as NOT installed.
+                #if canImport(FluidAudio)
+                return AsrModels.modelsExist(at: AsrModels.defaultCacheDirectory(for: .v3), version: .v3)
+                #else
+                return false
+                #endif
             case .parakeetTDTv2:
-                // Hardcoded path check for NVIDIA v2
-                return Self.parakeetCacheDirectory(version: "parakeet-tdt-0.6b-v2-coreml")
+                #if canImport(FluidAudio)
+                return AsrModels.modelsExist(at: AsrModels.defaultCacheDirectory(for: .v2), version: .v2)
+                #else
+                return false
+                #endif
             case .parakeetRealtime:
-                return Self.parakeetCacheDirectory(version: "parakeet-eou-streaming/parakeet-eou-streaming/160ms")
+                // Streaming model is not an AsrModels v2/v3 repo: require a non-empty directory
+                // containing real CoreML artifacts.
+                return Self.directoryHasModelArtifacts(relativePath: "parakeet-eou-streaming/parakeet-eou-streaming/160ms")
             case .qwen3Asr:
                 #if canImport(FluidAudio) && ENABLE_QWEN
                 if #available(macOS 15.0, *) {
@@ -4057,16 +4248,30 @@ final class SettingsStore: ObservableObject {
             }
         }
 
-        private static func parakeetCacheDirectory(version: String) -> Bool {
+        /// Validates that a FluidAudio model subdirectory holds REAL artifacts rather than an
+        /// empty or partial download: it must contain at least one CoreML model bundle
+        /// (.mlmodelc/.mlpackage) and exceed a sane minimum total size. Used for models that are
+        /// not validated through `AsrModels.modelsExist` (e.g. the streaming Parakeet model).
+        static func directoryHasModelArtifacts(relativePath: String, minBytes: Int = 1_000_000) -> Bool {
+            let fm = FileManager.default
+            let baseModelsDir: URL?
             #if canImport(FluidAudio)
-            let baseCacheDir = AsrModels.defaultCacheDirectory().deletingLastPathComponent()
-            let modelDir = baseCacheDir.appendingPathComponent(version)
-            return FileManager.default.fileExists(atPath: modelDir.path)
+            baseModelsDir = AsrModels.defaultCacheDirectory().deletingLastPathComponent()
             #else
-            let baseCacheDir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first?
-                .appendingPathComponent(version)
-            return baseCacheDir.map { FileManager.default.fileExists(atPath: $0.path) } ?? false
+            baseModelsDir = fm.urls(for: .cachesDirectory, in: .userDomainMask).first
             #endif
+            guard let dir = baseModelsDir?.appendingPathComponent(relativePath) else { return false }
+            var isDir: ObjCBool = false
+            guard fm.fileExists(atPath: dir.path, isDirectory: &isDir), isDir.boolValue else { return false }
+            guard let enumerator = fm.enumerator(at: dir, includingPropertiesForKeys: [.fileSizeKey]) else { return false }
+            var totalBytes = 0
+            var hasModelBundle = false
+            for case let fileURL as URL in enumerator {
+                let ext = fileURL.pathExtension
+                if ext == "mlmodelc" || ext == "mlpackage" { hasModelBundle = true }
+                totalBytes += (try? fileURL.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
+            }
+            return hasModelBundle && totalBytes >= minBytes
         }
 
         /// Brand/provider name for the model (NVIDIA, Apple, OpenAI)
@@ -4181,6 +4386,7 @@ private extension SettingsStore {
         static let showMainWindowAtLoginLaunch = "ShowMainWindowAtLoginLaunch"
         static let dictationPromptOff = "DictationPromptOff"
         static let enableDebugLogs = "EnableDebugLogs"
+        static let allowCloudProviders = "AllowCloudProviders"
         static let availableAIModels = "AvailableAIModels"
         static let availableModelsByProvider = "AvailableModelsByProvider"
         static let selectedAIModel = "SelectedAIModel"
@@ -4501,6 +4707,9 @@ extension SettingsStore {
     /// This unified setting replaces the old TranscriptionProviderOption + WhisperModelSize combination.
     var selectedSpeechModel: SpeechModel {
         get {
+#if HARDENED
+            return .parakeetTDTv2
+#else
             // Check if already using new system
             if let rawValue = defaults.string(forKey: Keys.selectedSpeechModel),
                let model = SpeechModel(rawValue: rawValue)
@@ -4527,11 +4736,16 @@ extension SettingsStore {
 
             // Migration: Convert old settings to new SpeechModel
             return self.migrateToSpeechModel()
+#endif
         }
         set {
             objectWillChange.send()
+#if HARDENED
+            self.defaults.set(SpeechModel.parakeetTDTv2.rawValue, forKey: Keys.selectedSpeechModel)
+#else
             let model = newValue == .nemotronStreaming320 ? SpeechModel.nemotronStreaming : newValue
             self.defaults.set(model.rawValue, forKey: Keys.selectedSpeechModel)
+#endif
         }
     }
 

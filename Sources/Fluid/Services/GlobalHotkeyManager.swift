@@ -433,7 +433,7 @@ final class GlobalHotkeyManager: NSObject {
     private func setupGlobalHotkey() -> Bool {
         self.cleanupEventTap()
 
-        if !AXIsProcessTrusted() {
+        if !AccessibilityTrust.isTrusted() {
             DebugLogger.shared.debug("Accessibility permissions not granted", source: "GlobalHotkeyManager")
             return false
         }

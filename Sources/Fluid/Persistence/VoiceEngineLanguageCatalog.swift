@@ -156,6 +156,8 @@ enum VoiceEngineLanguageCatalog {
             }
         }
 
+#if !HARDENED
+        // Hardened build: Apple Speech routes are not offered (local ASR only).
         if let appleSpeechAnalyzerLocale = Self.appleSpeechAnalyzerLocaleIdentifier(for: language.id) {
             routes.append(Self.route(language, .appleSpeechAnalyzer, .appleSpeech(localeIdentifier: appleSpeechAnalyzerLocale)))
         }
@@ -163,6 +165,7 @@ enum VoiceEngineLanguageCatalog {
         if let appleSpeechLegacyLocale = Self.appleSpeechLegacyLocaleIdentifier(for: language.id) {
             routes.append(Self.route(language, .appleSpeech, .appleSpeech(localeIdentifier: appleSpeechLegacyLocale)))
         }
+#endif
 
         return routes
     }

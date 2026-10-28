@@ -45,19 +45,19 @@ enum ThinkingParserFactory {
 
         // Nemotron/Nemo models: no opening <think>, just </think> as separator
         if modelLower.contains("nemotron") || modelLower.contains("nemo") {
-            DebugLogger.shared.debug("ThinkingParser: Using NemoParser for model '\(model)'", source: "LLMClient")
+            DebugLogger.shared.debug("ThinkingParser: Using NemoParser for model=\(model)", source: "LLMClient")
             return NemoThinkingParser()
         }
 
         // Qwen models with thinking: use standard <think>...</think> pattern
         if modelLower.contains("qwen") && (modelLower.contains("think") || modelLower.contains("qwq")) {
-            DebugLogger.shared.debug("ThinkingParser: Using StandardParser for Qwen model '\(model)'", source: "LLMClient")
+            DebugLogger.shared.debug("ThinkingParser: Using StandardParser for Qwen model=\(model)", source: "LLMClient")
             return StandardThinkingParser()
         }
 
         // DeepSeek models: often use separate reasoning_content field
         if modelLower.contains("deepseek") {
-            DebugLogger.shared.debug("ThinkingParser: Using SeparateFieldParser for DeepSeek model '\(model)'", source: "LLMClient")
+            DebugLogger.shared.debug("ThinkingParser: Using SeparateFieldParser for DeepSeek model=\(model)", source: "LLMClient")
             return SeparateFieldThinkingParser()
         }
 
@@ -65,12 +65,12 @@ enum ThinkingParserFactory {
         if SettingsStore.shared.isReasoningModel(model) &&
             (modelLower.contains("gpt-5") || modelLower.contains("o1") || modelLower.contains("o3") || modelLower.contains("gpt-oss"))
         {
-            DebugLogger.shared.debug("ThinkingParser: Using SeparateFieldParser for reasoning model '\(model)'", source: "LLMClient")
+            DebugLogger.shared.debug("ThinkingParser: Using SeparateFieldParser for reasoning model=\(model)", source: "LLMClient")
             return SeparateFieldThinkingParser()
         }
 
         // Default: Standard parser with <think>...</think> pattern
-        DebugLogger.shared.debug("ThinkingParser: Using StandardParser (default) for model '\(model)'", source: "LLMClient")
+        DebugLogger.shared.debug("ThinkingParser: Using StandardParser (default) for model=\(model)", source: "LLMClient")
         return StandardThinkingParser()
     }
 
@@ -81,7 +81,7 @@ enum ThinkingParserFactory {
 
         // Nemotron/Nemo models: require enable_thinking flag
         if modelLower.contains("nemotron") || modelLower.contains("nemo") {
-            DebugLogger.shared.debug("ThinkingParser: Adding enable_thinking=true for Nemotron model '\(model)'", source: "LLMClient")
+            DebugLogger.shared.debug("ThinkingParser: Adding enable_thinking=true for Nemotron model=\(model)", source: "LLMClient")
             return [
                 "enable_thinking": true,
                 // "truncate_history_thinking": false  // Optional: could expose this in settings
@@ -90,7 +90,7 @@ enum ThinkingParserFactory {
 
         // DeepSeek R1 models: may need reasoning parameters
         if modelLower.contains("deepseek"), modelLower.contains("r1") {
-            DebugLogger.shared.debug("ThinkingParser: Adding reasoning params for DeepSeek R1 model '\(model)'", source: "LLMClient")
+            DebugLogger.shared.debug("ThinkingParser: Adding reasoning params for DeepSeek R1 model=\(model)", source: "LLMClient")
             return [
                 "enable_reasoning": true,
             ]

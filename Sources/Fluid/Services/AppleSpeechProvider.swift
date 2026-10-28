@@ -81,7 +81,11 @@ final class AppleSpeechProvider: TranscriptionProvider {
         // 3. Create Request
         let request = SFSpeechAudioBufferRecognitionRequest()
         request.shouldReportPartialResults = false // We want the final result for this chunk
-        request.requiresOnDeviceRecognition = false // Allow macOS to use the best available Apple speech path.
+        // Defensive privacy default: force on-device recognition so this legacy provider can
+        // never send audio to Apple's servers, even if it is somehow reached. In the hardened
+        // build this provider is unreachable (Apple Speech is not selectable), but the code
+        // remains compiled, so keep the safe value.
+        request.requiresOnDeviceRecognition = true
         request.append(buffer)
         request.endAudio() // Signal that this buffer is the complete utterance for this request
 
@@ -104,7 +108,8 @@ final class AppleSpeechProvider: TranscriptionProvider {
                 if let result = result, result.isFinal {
                     hasResumed = true
                     let transcription = result.bestTranscription.formattedString
-                    DebugLogger.shared.debug("AppleSpeechProvider: Got final result: '\(transcription)'", source: "AppleSpeechProvider")
+                    // Privacy: log length only, never transcript text.
+                    DebugLogger.shared.debug("AppleSpeechProvider: Got final result (chars=\(transcription.count))", source: "AppleSpeechProvider")
                     continuation.resume(returning: ASRTranscriptionResult(text: transcription, confidence: 1.0))
                 }
                 // Partial results ignored as we requested final only

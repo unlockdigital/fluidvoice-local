@@ -131,8 +131,12 @@ final class TypingService {
     /// Best-effort: returns the PID owning the currently focused accessibility element.
     /// This is more reliable than NSWorkspace.frontmostApplication for floating overlays/launchers.
     static func captureSystemFocusedPID() -> pid_t? {
+        if DirectInputMethodRuntime.isEnabled {
+            return NSWorkspace.shared.frontmostApplication?.processIdentifier
+        }
+
         // Accessibility is required to query system-focused AX element.
-        guard AXIsProcessTrusted() else {
+        guard AccessibilityTrust.isTrusted() else {
             self.storeFocusSnapshot(nil)
             return nil
         }
@@ -173,12 +177,16 @@ final class TypingService {
     /// text field. Used by Continuous Dictation Mode to decide capitalization when chaining
     /// transcribed segments. Returns "" when the focused field/context is unavailable.
     static func textBeforeCursorInFocusedField() -> String {
-        TypingService().captureTextBeforeCursorInFocusedField()
+        if DirectInputMethodRuntime.isEnabled {
+            return DirectInputMethodBridge.shared.textBeforeCursor()
+        }
+        return TypingService().captureTextBeforeCursorInFocusedField()
     }
 
     @discardableResult
     static func restoreCapturedFocus(in pid: pid_t) -> Bool {
-        guard AXIsProcessTrusted() else { return false }
+        guard DirectInputMethodRuntime.isEnabled == false else { return false }
+        guard AccessibilityTrust.isTrusted() else { return false }
         guard let snapshot = loadFocusSnapshot(),
               snapshot.pid == pid else { return false }
 
@@ -213,7 +221,8 @@ final class TypingService {
     }
 
     static func isCapturedFocusStillActive(for pid: pid_t) -> Bool {
-        guard AXIsProcessTrusted(),
+        guard DirectInputMethodRuntime.isEnabled == false else { return false }
+        guard AccessibilityTrust.isTrusted(),
               let snapshot = loadFocusSnapshot(),
               snapshot.pid == pid,
               let element = snapshot.element
@@ -227,6 +236,7 @@ final class TypingService {
     /// Best-effort: activates the app with the given PID, unless it's Fluid itself.
     @discardableResult
     static func activateApp(pid: pid_t) -> Bool {
+        guard DirectInputMethodRuntime.isEnabled == false else { return false }
         guard pid > 0 else { return false }
         guard let app = NSRunningApplication(processIdentifier: pid) else { return false }
 
@@ -277,6 +287,17 @@ final class TypingService {
             return
         }
 
+        if DirectInputMethodRuntime.isEnabled {
+            if DirectInputMethodBridge.shared.insert(text) {
+                self.bench("request_complete insertion=input_method_client")
+                self.log("[TypingService] Transcript delivered through the active InputMethodKit client")
+            } else {
+                self.bench("request_return reason=input_method_client_unavailable")
+                self.log("[TypingService] Direct-input client unavailable; transcript delivery stopped")
+            }
+            return
+        }
+
         // Prevent concurrent typing operations
         guard !self.isCurrentlyTyping else {
             self.bench("request_return reason=already_typing")
@@ -285,10 +306,10 @@ final class TypingService {
         }
 
         // Check accessibility permissions first
-        guard AXIsProcessTrusted() else {
+        guard AccessibilityTrust.isTrusted() else {
             self.bench("request_return reason=accessibility_not_trusted")
             self.log("[TypingService] ERROR: Accessibility permissions required for text injection")
-            self.log("[TypingService] Current accessibility status: \(AXIsProcessTrusted())")
+            self.log("[TypingService] Current accessibility status: \(AccessibilityTrust.isTrusted())")
             return
         }
 
@@ -378,7 +399,7 @@ final class TypingService {
         }
 
         // Check if we have permission to create events
-        self.log("[TypingService] Accessibility trusted: \(AXIsProcessTrusted())")
+        self.log("[TypingService] Accessibility trusted: \(AccessibilityTrust.isTrusted())")
 
         // Primary: Try CGEvent unicode insertion, targeting the focused PID when available
         // This is the most reliable method for Terminals, Electron apps (Discord, VSCode), etc.

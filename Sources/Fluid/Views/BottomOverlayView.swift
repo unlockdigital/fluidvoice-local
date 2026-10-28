@@ -7,6 +7,7 @@
 
 import AppKit
 import Combine
+import OSLog
 import SwiftUI
 
 private enum OverlayShortcutResolver {
@@ -28,9 +29,15 @@ private enum OverlayShortcutResolver {
 final class BottomOverlayWindowController {
     static let shared = BottomOverlayWindowController()
 
+    private let logger = Logger(
+        subsystem: Bundle.main.bundleIdentifier ?? "com.unlockdigital.inputmethod.FluidVoiceHardened",
+        category: "Overlay"
+    )
+
     private var window: NSPanel?
     private var audioSubscription: AnyCancellable?
     private var pendingResizeWorkItem: DispatchWorkItem?
+    private var pendingVisibilityRecoveryWorkItem: DispatchWorkItem?
     private var pendingReleaseTransitionResetWorkItem: DispatchWorkItem?
     private var localMouseDownMonitor: Any?
     private var globalMouseDownMonitor: Any?
@@ -58,6 +65,8 @@ final class BottomOverlayWindowController {
         self.endReleaseTransition(flushDeferredUpdate: false)
         self.pendingResizeWorkItem?.cancel()
         self.pendingResizeWorkItem = nil
+        self.pendingVisibilityRecoveryWorkItem?.cancel()
+        self.pendingVisibilityRecoveryWorkItem = nil
         BottomOverlayPromptMenuController.shared.hide()
         BottomOverlayModeMenuController.shared.hide()
         BottomOverlayActionsMenuController.shared.hide()
@@ -88,12 +97,11 @@ final class BottomOverlayWindowController {
             self.createWindow()
         }
 
-        self.targetScreen = OverlayScreenResolver.screenForCurrentPointer()
+        self.targetScreen = OverlayScreenResolver.screenForActiveContext()
         self.positionWindow()
 
         // Show immediately; ASR startup can delay AppKit animation completions.
-        self.window?.alphaValue = 1
-        self.window?.orderFrontRegardless()
+        self.presentWindow()
         Self.overlayBench("bottom_order_front elapsedMs=\(Self.elapsedMs(since: startedAt))")
         Self.overlayBench("bottom_fade_complete elapsedMs=\(Self.elapsedMs(since: startedAt))")
     }
@@ -107,6 +115,8 @@ final class BottomOverlayWindowController {
         self.audioSubscription = nil
         self.pendingResizeWorkItem?.cancel()
         self.pendingResizeWorkItem = nil
+        self.pendingVisibilityRecoveryWorkItem?.cancel()
+        self.pendingVisibilityRecoveryWorkItem = nil
         self.pendingReleaseTransitionResetWorkItem?.cancel()
         self.targetScreen = nil
         self.removeMouseDownMonitors()
@@ -273,6 +283,44 @@ final class BottomOverlayWindowController {
         self.window = panel
     }
 
+    /// Keep the transcription surface visible after recovery launches. A previous guardian used
+    /// `open -j`, which kept recording alive while AppKit suppressed this nonactivating panel.
+    /// Unhiding does not activate FluidVoice or take keyboard focus from the insertion target.
+    private func presentWindow() {
+        guard let window = self.window else { return }
+
+        self.pendingVisibilityRecoveryWorkItem?.cancel()
+        self.pendingVisibilityRecoveryWorkItem = nil
+
+        NSApp.unhide(nil)
+        window.alphaValue = 1
+        window.orderFrontRegardless()
+        self.verifyVisiblePlacement()
+
+        let recovery = DispatchWorkItem { [weak self, weak window] in
+            guard let self, let window, self.window === window else { return }
+            guard window.isVisible == false else {
+                self.logger.debug("Bottom overlay visibility confirmed")
+                return
+            }
+
+            NSApp.unhide(nil)
+            window.orderFrontRegardless()
+            self.verifyVisiblePlacement()
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self, weak window] in
+                guard let self, let window, self.window === window else { return }
+                if window.isVisible {
+                    self.logger.notice("Bottom overlay visibility recovered")
+                } else {
+                    self.logger.error("Bottom overlay remains hidden after visibility recovery")
+                }
+            }
+        }
+        self.pendingVisibilityRecoveryWorkItem = recovery
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1, execute: recovery)
+    }
+
     private var isReleaseTransitionActive: Bool {
         guard let deadline = self.releaseTransitionActiveUntil else { return false }
         if deadline > Date() {
@@ -300,7 +348,7 @@ final class BottomOverlayWindowController {
             }
         }
 
-        if self.globalMouseDownMonitor == nil {
+        if DirectInputMethodRuntime.isEnabled == false, self.globalMouseDownMonitor == nil {
             self.globalMouseDownMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
                 let clickPoint = NSEvent.mouseLocation
                 Task { @MainActor [weak self] in
@@ -333,7 +381,7 @@ final class BottomOverlayWindowController {
         // Safe check for window and screen availability
         guard let window = window else { return }
 
-        let screen = self.targetScreen ?? window.screen ?? OverlayScreenResolver.screenForCurrentPointer()
+        let screen = self.targetScreen ?? window.screen ?? OverlayScreenResolver.screenForActiveContext()
         guard let screen = screen else { return }
 
         let fullFrame = screen.frame
@@ -359,6 +407,27 @@ final class BottomOverlayWindowController {
 
         // Apply position directly to avoid implicit frame animations during hover-driven resizes.
         window.setFrameOrigin(NSPoint(x: x, y: y))
+    }
+
+    private func verifyVisiblePlacement() {
+        guard let window = self.window else { return }
+
+        let selectedFrame = self.targetScreen?.visibleFrame
+        if let selectedFrame, window.frame.intersects(selectedFrame) == false,
+           let fallbackScreen = NSScreen.main ?? NSScreen.screens.first
+        {
+            self.targetScreen = fallbackScreen
+            self.positionWindow()
+            window.orderFrontRegardless()
+            self.logger.error(
+                "Overlay placement required visible-screen recovery; fallback=\(fallbackScreen.localizedName, privacy: .public)"
+            )
+        }
+
+        let frame = window.frame
+        self.logger.notice(
+            "Bottom overlay presented; visible=\(window.isVisible, privacy: .public) x=\(Int(frame.minX), privacy: .public) y=\(Int(frame.minY), privacy: .public) width=\(Int(frame.width), privacy: .public) height=\(Int(frame.height), privacy: .public)"
+        )
     }
 }
 
