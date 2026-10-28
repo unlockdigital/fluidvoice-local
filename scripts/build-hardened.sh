@@ -26,5 +26,5 @@ else
   SIGNING=("CODE_SIGN_IDENTITY=${SIGN_IDENTITY:--}" CODE_SIGNING_ALLOWED=YES CODE_SIGNING_REQUIRED=NO)
 fi
 xcodebuild "${ARGS[@]}" -disableAutomaticPackageResolution "${SIGNING[@]}" build
-printf '\nBuilt: %s/Build/Products/Release/FluidVoice Hardened.app\n' "$DD"
+printf '\nBuilt: %s/Build/Products/Release/FluidVoice Local.app\n' "$DD"
 echo 'Use the packaging scripts with a separately staged verified model for an offline-ready input-method bundle.'

@@ -85,11 +85,11 @@ final class DirectInputSourceCoordinator {
             }
             return "Paused by macOS Secure Input"
         case .restoring:
-            return "Restoring FluidVoice Input..."
+            return "Restoring FluidVoice Local Input..."
         case .inactive:
-            return "FluidVoice Input Source Not Selected"
+            return "FluidVoice Local Input Source Not Selected"
         case .unavailable:
-            return "FluidVoice Input Source Unavailable"
+            return "FluidVoice Local Input Source Unavailable"
         }
     }
 

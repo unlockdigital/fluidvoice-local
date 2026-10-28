@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [string]$InstallDirectory = (Join-Path $env:LOCALAPPDATA 'Programs\FluidVoice Hardened')
+    [string]$InstallDirectory = (Join-Path $env:LOCALAPPDATA 'Programs\FluidVoice Local')
 )
 
 $ErrorActionPreference = 'Stop'
@@ -15,11 +15,11 @@ $allowedRoot = [IO.Path]::GetFullPath((Join-Path $env:LOCALAPPDATA 'Programs'))
 if (-not $installPath.StartsWith($allowedRoot + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) {
     throw "Install path must remain under $allowedRoot"
 }
-if (-not (Test-Path -LiteralPath (Join-Path $publish 'FluidVoice Hardened.exe'))) { throw 'Published application is missing.' }
+if (-not (Test-Path -LiteralPath (Join-Path $publish 'FluidVoice Local.exe'))) { throw 'Published application is missing.' }
 if (-not (Test-Path -LiteralPath $model)) { throw 'Approved model is missing.' }
 $modelHash = (Get-FileHash -LiteralPath $model -Algorithm SHA256).Hash.ToLowerInvariant()
 if ($modelHash -ne $expectedModelHash) { throw 'Approved model SHA-256 mismatch.' }
-$publishedFileVersion = (Get-Item -LiteralPath (Join-Path $publish 'FluidVoice Hardened.exe')).VersionInfo.FileVersion
+$publishedFileVersion = (Get-Item -LiteralPath (Join-Path $publish 'FluidVoice Local.exe')).VersionInfo.FileVersion
 if ($publishedFileVersion -ne $expectedFileVersion) {
     throw "Published file version mismatch: expected $expectedFileVersion, found $publishedFileVersion."
 }
@@ -27,7 +27,7 @@ if ($publishedFileVersion -ne $expectedFileVersion) {
 $backup = $null
 $newInstallCreated = $false
 try {
-    Get-Process -Name 'FluidVoice Hardened' -ErrorAction SilentlyContinue | Stop-Process -ErrorAction Stop
+    Get-Process -Name 'FluidVoice Local' -ErrorAction SilentlyContinue | Stop-Process -ErrorAction Stop
 
     if (Test-Path -LiteralPath $installPath) {
         $backup = "$installPath.rollback-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
@@ -43,7 +43,7 @@ try {
     Copy-Item -LiteralPath $model -Destination (Join-Path $models 'ggml-large-v3-turbo-q5_0.bin')
 
     $policy = [ordered]@{
-        Product = 'FluidVoice Hardened for Windows'
+        Product = 'FluidVoice Local for Windows'
         Version = '1.2.0-win11'
         SpeechRecognition = 'local-whisper-large-v3-turbo-q5_0'
         ModelRevision = '98aa99a0a9db05ae2342309f5096248665f7cba3'
@@ -74,9 +74,10 @@ try {
         Files = @($manifest)
     } | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath (Join-Path $installPath 'integrity-manifest.json') -Encoding UTF8
 
-    $executable = Join-Path $installPath 'FluidVoice Hardened.exe'
+    $executable = Join-Path $installPath 'FluidVoice Local.exe'
     $runKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run'
     New-Item -Path $runKey -Force | Out-Null
+    # Retain the existing startup value identity so a rename replaces the prior login entry.
     Set-ItemProperty -LiteralPath $runKey -Name 'FluidVoiceHardened' -Value ('"' + $executable + '"') -Type String
 
     Write-Output "INSTALL_PATH=$installPath"

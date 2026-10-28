@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Validate FluidVoice Hardened's case-sensitive privacy preferences.
+# Validate FluidVoice Local's case-sensitive privacy preferences.
 # Usage: ./scripts/check-hardened-preferences.sh [bundle-id]
 
 set -uo pipefail

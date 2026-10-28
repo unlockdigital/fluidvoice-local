@@ -87,7 +87,7 @@ private func report(_ facts: Facts, fixture: String?) -> String {
     let summary = rows.allSatisfy { $0.state == .observed } ? "observations-complete" : "attention-or-unavailable"
     let versionMatches = facts.version.majorVersion == 27
     return ([
-        "# FluidVoice macOS 27 readiness",
+        "# FluidVoice Local macOS 27 readiness",
         "",
         "Evidence: \(fixture.map { "SIMULATED fixture \($0); host checks skipped" } ?? "LIVE read-only observations")",
         "Bundle: \(bundleID)",

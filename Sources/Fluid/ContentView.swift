@@ -1048,7 +1048,7 @@ struct ContentView: View {
         }
         .listStyle(.sidebar)
         .animation(nil, value: self.selectedSidebarItem)
-        .navigationTitle("FluidVoice")
+        .navigationTitle("FluidVoice Local")
         .tint(self.theme.palette.accent)
     }
 
@@ -1276,8 +1276,8 @@ struct ContentView: View {
                     self.instructionStep(number: "2", text: "Choose **Allow** in the system dialog")
                 } else if self.asr.micStatus == .denied {
                     self.instructionStep(number: "1", text: "Click **Open Settings** above")
-                    self.instructionStep(number: "2", text: "Find **FluidVoice** in the microphone list")
-                    self.instructionStep(number: "3", text: "Toggle **FluidVoice ON** to allow access")
+                    self.instructionStep(number: "2", text: "Find **FluidVoice Local** in the microphone list")
+                    self.instructionStep(number: "3", text: "Toggle **FluidVoice Local ON** to allow access")
                 }
             }
             .padding(.leading, 4)
@@ -3588,7 +3588,7 @@ extension ContentView {
     private func positionWindowBesideSystemSettings(requestID: UUID) {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
             guard self.accessibilityGuideRequestID == requestID else { return }
-            guard let window = NSApp.windows.first(where: { $0.isVisible && $0.title == "FluidVoice" }) ?? NSApp.keyWindow else {
+            guard let window = NSApp.windows.first(where: { $0.isVisible && $0.title == "FluidVoice Local" }) ?? NSApp.keyWindow else {
                 return
             }
 
@@ -3756,7 +3756,7 @@ extension ContentView {
     private func cancelAccessibilityPermissionFlow() {
         self.finishAccessibilityPermissionFlow()
         NSApp.activate(ignoringOtherApps: true)
-        (NSApp.windows.first { $0.isVisible && $0.title == "FluidVoice" } ?? NSApp.keyWindow)?
+        (NSApp.windows.first { $0.isVisible && $0.title == "FluidVoice Local" } ?? NSApp.keyWindow)?
             .makeKeyAndOrderFront(nil)
     }
 
@@ -3813,11 +3813,8 @@ extension ContentView {
     }
 
     private var draggableAccessibilityAppURL: URL {
-        let installedURL = URL(fileURLWithPath: "/Applications/FluidVoice.app")
-        if FileManager.default.fileExists(atPath: installedURL.path) {
-            return installedURL
-        }
-        return Bundle.main.bundleURL
+        // Permission guidance always refers to the running candidate's identity.
+        Bundle.main.bundleURL
     }
 
     func restartApp() {
@@ -3902,7 +3899,7 @@ private struct AccessibilitySettingsFloatingGuideView: View {
                         value: self.isArrowRaised
                     )
 
-                Text("Drag FluidVoice into the Accessibility apps list as shown")
+                Text("Drag FluidVoice Local into the Accessibility apps list as shown")
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(.white.opacity(0.78))
                     .lineLimit(1)
@@ -3937,14 +3934,14 @@ private struct AccessibilitySettingsFloatingGuideView: View {
                 }
                 .buttonStyle(.plain)
                 .focusable(false)
-                .help("Return to FluidVoice")
+                .help("Return to FluidVoice Local")
 
                 Image(nsImage: self.appIcon)
                     .resizable()
                     .frame(width: 34, height: 34)
                     .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
 
-                Text("FluidVoice")
+                Text("FluidVoice Local")
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(.white.opacity(0.92))
 
@@ -3978,7 +3975,7 @@ private struct AccessibilitySettingsFloatingGuideView: View {
             .onDrag {
                 NSItemProvider(object: self.appURL as NSURL)
             }
-            .accessibilityLabel("Drag FluidVoice to the Accessibility list")
+            .accessibilityLabel("Drag FluidVoice Local to the Accessibility list")
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 16)

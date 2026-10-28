@@ -1,4 +1,4 @@
-# FluidVoice Hardened Contributor Instructions
+# FluidVoice Local Contributor Instructions
 
 Read HANDOFF.md before changing Mac lifecycle, hotkeys, text insertion, signing or installation. Read platform-specific instructions before editing a native implementation.
 

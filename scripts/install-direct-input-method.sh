@@ -3,7 +3,7 @@
 set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-SOURCE_APP="${1:-$REPO_DIR/build/FluidVoice Direct Input.app}"
+SOURCE_APP="${1:-$REPO_DIR/build/FluidVoice Local Direct Input.app}"
 USER_INPUT_METHODS="$HOME/Library/Input Methods"
 TARGET_APP="$USER_INPUT_METHODS/FluidVoice Direct Input.app"
 STAGING_APP="$USER_INPUT_METHODS/.FluidVoice Direct Input.installing.$$.app"
@@ -171,6 +171,6 @@ launchctl print "$USER_GUI_DOMAIN/$GUARDIAN_LABEL" >/dev/null
 echo "Installed FluidVoice input-source guardian: $GUARDIAN_PLIST"
 
 echo "Installed: $TARGET_APP"
-echo "Next: select FluidVoice Direct Input from the menu-bar input menu."
+echo "Next: select FluidVoice Local Direct Input from the menu-bar input menu."
 echo "Right Option toggles dictation while this input source is selected."
 echo "Globe opens Emoji & Symbols."

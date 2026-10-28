@@ -1,14 +1,16 @@
-# FluidVoice Hardened
+# FluidVoice Local
 
-<img src="assets/branding/mark.svg" width="72" height="72" alt="FluidVoice Hardened microphone and privacy shield">
+<img src="assets/branding/mark.svg" width="72" height="72" alt="FluidVoice Local microphone and privacy shield">
 
 **Private voice input for the applications you choose.**
 
 Privacy-preserving local transcription and dictation for everyday applications, LLM prompts, coding agents and writing workflows. Speech recognition runs on your computer, with a strict processing profile that keeps cloud services, telemetry and retained dictation history disabled.
 
-FluidVoice Hardened is an independently maintained GPLv3 fork of [FluidVoice](https://github.com/altic-dev/FluidVoice), created by altic-dev and its contributors. Unlock Digital maintains a strict local-dictation profile and native Mac and Windows implementations. Original notices and [GPLv3](LICENSE) are preserved. See [provenance](PROVENANCE.md) and [third-party notices](THIRD_PARTY_NOTICES.md).
+FluidVoice Local is an independently maintained GPLv3 fork of [FluidVoice](https://github.com/altic-dev/FluidVoice), created by altic-dev and its contributors. Unlock Digital maintains a strict local-dictation profile and native Mac and Windows implementations. Original notices and [GPLv3](LICENSE) are preserved. See [provenance](PROVENANCE.md) and [third-party notices](THIRD_PARTY_NOTICES.md).
 
 The `hardened` branch is the product source branch. This is a source preview; platform acceptance and supported binary distribution are separate milestones.
+
+Canonical repository: [unlockdigital/fluidvoice-local](https://github.com/unlockdigital/fluidvoice-local). The project adopted the FluidVoice Local name on October 28, 2026. [Naming and compatibility](docs/BRANDING.md) explains the stable installation identifiers and preserved historical records.
 
 ## Why this fork exists
 

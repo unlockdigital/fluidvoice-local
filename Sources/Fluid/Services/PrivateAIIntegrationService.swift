@@ -102,7 +102,7 @@ actor PrivateAIIntegrationService {
         let modelDirectoryPath = modelDirectoryURL.path
 
         guard targetPath == expectedURL.path || targetPath.hasPrefix(modelDirectoryPath + "/") else {
-            throw PrivateAIModelRemovalError(message: "This model is not in FluidVoice's model folder.")
+            throw PrivateAIModelRemovalError(message: "This model is not in FluidVoice Local's model folder.")
         }
 
         try FileManager.default.removeItem(at: targetURL)

@@ -79,9 +79,9 @@ internal sealed class RecordingOverlayForm : Form
         ShowIcon = false;
         ShowInTaskbar = false;
         StartPosition = FormStartPosition.Manual;
-        Text = "FluidVoiceHardenedOverlay";
+        Text = "FluidVoice Local";
         TopMost = true;
-        AccessibleName = "FluidVoice live dictation";
+        AccessibleName = "FluidVoice Local live dictation";
         AccessibleRole = AccessibleRole.Pane;
         AccessibleDefaultActionDescription = string.Empty;
 
@@ -153,7 +153,7 @@ internal sealed class RecordingOverlayForm : Form
         UpdateWorkingArea(targetWindow);
         AccessibleDefaultActionDescription = "Stop recording and insert the final transcript";
         SetAccessibleDescription(
-            $"FluidVoice is listening for {targetApplication.DisplayName}. " +
+            $"FluidVoice Local is listening for {targetApplication.DisplayName}. " +
             "Live transcript will appear here. Press F3 or click the stop control to finish and insert.",
             announceStateChange: true);
         targetLevel = 0;
@@ -181,8 +181,8 @@ internal sealed class RecordingOverlayForm : Form
         AccessibleDefaultActionDescription = string.Empty;
         SetAccessibleDescription(
             string.IsNullOrEmpty(transcript)
-                ? $"FluidVoice is transcribing locally for {targetApplication.DisplayName}."
-                : $"FluidVoice is finalizing this local transcript for {targetApplication.DisplayName}: {transcript}",
+                ? $"FluidVoice Local is transcribing locally for {targetApplication.DisplayName}."
+                : $"FluidVoice Local is finalizing this local transcript for {targetApplication.DisplayName}: {transcript}",
             announceStateChange: true);
         recordingElapsed.Stop();
         Cursor = Cursors.Default;
@@ -199,8 +199,8 @@ internal sealed class RecordingOverlayForm : Form
         AccessibleDefaultActionDescription = string.Empty;
         SetAccessibleDescription(
             string.IsNullOrEmpty(transcript)
-                ? $"FluidVoice inserted the dictation into {targetApplication.DisplayName}."
-                : $"FluidVoice inserted this dictation into {targetApplication.DisplayName}: {transcript}",
+                ? $"FluidVoice Local inserted the dictation into {targetApplication.DisplayName}."
+                : $"FluidVoice Local inserted this dictation into {targetApplication.DisplayName}: {transcript}",
             announceStateChange: true);
         recordingElapsed.Stop();
         Cursor = Cursors.Default;
@@ -267,9 +267,9 @@ internal sealed class RecordingOverlayForm : Form
         var updatedAccessibleDescription = visualState switch
         {
             RecordingOverlayState.Recording when !string.IsNullOrEmpty(transcript) =>
-                $"FluidVoice live local transcript for {targetApplication.DisplayName}: {transcript}",
+                $"FluidVoice Local live local transcript for {targetApplication.DisplayName}: {transcript}",
             RecordingOverlayState.Processing when !string.IsNullOrEmpty(transcript) =>
-                $"FluidVoice is finalizing this local transcript for {targetApplication.DisplayName}: {transcript}",
+                $"FluidVoice Local is finalizing this local transcript for {targetApplication.DisplayName}: {transcript}",
             _ => AccessibleDescription
         };
         SetAccessibleDescription(updatedAccessibleDescription);
@@ -1155,9 +1155,9 @@ internal sealed class RecordingOverlayForm : Form
         {
             SetAccessibleDescription(
                 string.IsNullOrEmpty(transcript)
-                    ? $"FluidVoice is listening for {targetApplication.DisplayName}. " +
+                    ? $"FluidVoice Local is listening for {targetApplication.DisplayName}. " +
                       "Live transcript will appear here. Press F3 or click the stop control to finish and insert."
-                    : $"FluidVoice live local transcript for {targetApplication.DisplayName}: {transcript}");
+                    : $"FluidVoice Local live local transcript for {targetApplication.DisplayName}: {transcript}");
         }
 
         Invalidate();

@@ -1,6 +1,6 @@
 # Windows security architecture
 
-This Windows x64 adaptation implements local push-to-dictate using a separate C#/.NET implementation. See [provenance](../PROVENANCE.md) for its source history and upstream mark attribution.
+FluidVoice Local for Windows implements local push-to-dictate using a separate C#/.NET implementation. See [provenance](../PROVENANCE.md) for its source history and upstream mark attribution.
 
 ## Data flow
 
@@ -88,3 +88,9 @@ recognition stabilizes, and are cleared on dismissal, abort, and disposal.
 - The install is per-user under `%LOCALAPPDATA%\Programs`; it is available across
   ordinary apps in that interactive user's desktop session, not at the Windows secure
   desktop, login screen, UAC prompts, or other users' sessions.
+
+## Renamed executable boundary
+
+The current executable is `FluidVoice Local.exe`, with a default installation path of `%LOCALAPPDATA%\Programs\FluidVoice Local\FluidVoice Local.exe`. Firewall configuration and privacy checks use **FluidVoice Local - Block Inbound** and **FluidVoice Local - Block Outbound**, and require that exact new executable path. Old executable-scoped rules continue to protect the old path. New path coverage must be provisioned and verified before launching a renamed candidate in a separately scoped Windows deployment.
+
+The HKCU Run value `FluidVoiceHardened` remains the startup identity and is repointed by installation to the quoted new executable path. The existing single-instance mutex also remains shared with the legacy build. See [Windows rename and deployment](../README.md#windows-rename-and-deployment) for process, preservation and rollback considerations. Historical installed-payload observations above describe the pre-rename build; renamed source validation currently covers static checks only.

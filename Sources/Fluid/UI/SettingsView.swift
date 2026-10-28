@@ -205,7 +205,7 @@ struct SettingsView: View {
                             // Launch at startup
                             self.settingsToggleRow(
                                 title: "Launch at startup",
-                                description: "Automatically start FluidVoice when you log in",
+                                description: "Automatically start FluidVoice Local when you log in",
                                 footnote: self.settings.launchAtStartupStatusMessage,
                                 errorMessage: self.settings.launchAtStartupErrorMessage,
                                 isOn: self.launchAtStartupBinding
@@ -216,7 +216,7 @@ struct SettingsView: View {
                             // Show window when launched at login
                             self.settingsToggleRow(
                                 title: "Show window when launched at login",
-                                description: "When off, FluidVoice starts silently in the menu bar at login. Opening the app yourself always shows the window.",
+                                description: "When off, FluidVoice Local starts silently in the menu bar at login. Opening the app yourself always shows the window.",
                                 isOn: Binding(
                                     get: { SettingsStore.shared.showMainWindowAtLoginLaunch },
                                     set: { SettingsStore.shared.showMainWindowAtLoginLaunch = $0 }
@@ -227,7 +227,7 @@ struct SettingsView: View {
                             // Hide from Dock & App Switcher
                             self.settingsToggleRow(
                                 title: "Hide from Dock & App Switcher",
-                                description: "Keep FluidVoice in the menu bar only (hides Dock icon and Cmd+Tab entry)",
+                                description: "Keep FluidVoice Local in the menu bar only (hides Dock icon and Cmd+Tab entry)",
                                 footnote: "Note: May require app restart to take effect.",
                                 isOn: Binding(
                                     get: { SettingsStore.shared.hideFromDockAndAppSwitcher },
@@ -437,7 +437,7 @@ struct SettingsView: View {
                                                 msg.messageText = isBeta ? "You're Up To Date (Beta)" : "You're Up To Date"
                                                 msg.informativeText = isBeta
                                                     ? "You're already running the latest build available in the beta channel."
-                                                    : "You're already running the latest version of FluidVoice."
+                                                    : "You're already running the latest version of FluidVoice Local."
                                             } else {
                                                 msg.messageText = "Update Check Failed"
                                                 msg.informativeText = "Unable to check for updates. Please try again later.\n\nError: \(error.localizedDescription)"
@@ -466,7 +466,7 @@ struct SettingsView: View {
                                     let targetVersion = self.rollbackVersion
                                     let confirm = NSAlert()
                                     confirm.messageText = "Rollback to \(infoText)?"
-                                    confirm.informativeText = "This will restore a previous app version and relaunch FluidVoice."
+                                    confirm.informativeText = "This will restore a previous app version and relaunch FluidVoice Local."
                                     confirm.alertStyle = .warning
                                     confirm.addButton(withTitle: "Rollback")
                                     confirm.addButton(withTitle: "Cancel")
@@ -486,7 +486,7 @@ struct SettingsView: View {
                                             await MainActor.run {
                                                 let success = NSAlert()
                                                 success.messageText = "Rollback Successful"
-                                                success.informativeText = "Rolled back to \(targetVersion). FluidVoice will relaunch shortly."
+                                                success.informativeText = "Rolled back to \(targetVersion). FluidVoice Local will relaunch shortly."
                                                 success.alertStyle = .informational
                                                 success.addButton(withTitle: "Report Bug")
                                                 success.addButton(withTitle: "OK")
@@ -591,7 +591,7 @@ struct SettingsView: View {
                                     title: "How to enable microphone access:",
                                     steps: self.asr.micStatus == .notDetermined
                                         ? ["Click **Grant Access** above", "Choose **Allow** in the system dialog"]
-                                        : ["Click **Open Settings** above", "Find **FluidVoice** in the microphone list", "Toggle **FluidVoice ON** to allow access"]
+                                        : ["Click **Open Settings** above", "Find **FluidVoice Local** in the microphone list", "Toggle **FluidVoice Local ON** to allow access"]
                                 )
                             }
                         }
@@ -659,7 +659,7 @@ struct SettingsView: View {
                                         .font(.subheadline.weight(.medium))
                                         .foregroundStyle(.secondary)
 
-                                    Text("Changes usually apply immediately. If a new shortcut does not respond, restart FluidVoice.")
+                                    Text("Changes usually apply immediately. If a new shortcut does not respond, restart FluidVoice Local.")
                                         .font(.caption)
                                         .foregroundStyle(.tertiary)
 
@@ -911,7 +911,7 @@ struct SettingsView: View {
 
                                     self.optionToggleRow(
                                         title: "Pause Media During Transcription",
-                                        description: "Automatically pause currently playing audio/video when transcription starts. Resumes only if FluidVoice paused it.",
+                                        description: "Automatically pause currently playing audio/video when transcription starts. Resumes only if FluidVoice Local paused it.",
                                         isOn: Binding(
                                             get: { SettingsStore.shared.pauseMediaDuringTranscription },
                                             set: { SettingsStore.shared.pauseMediaDuringTranscription = $0 }
@@ -921,7 +921,7 @@ struct SettingsView: View {
 
                                     self.optionToggleRow(
                                         title: "Share Anonymous Analytics",
-                                        description: "Send anonymous usage and performance metrics to help improve FluidVoice. Never includes transcription text or prompts.",
+                                        description: "Send anonymous usage and performance metrics to help improve FluidVoice Local. Never includes transcription text or prompts.",
                                         isOn: self.analyticsToggleBinding
                                     )
 
@@ -972,8 +972,8 @@ struct SettingsView: View {
                                     steps: [
                                         "Click **Open Accessibility Settings** above",
                                         "In the Accessibility window, click the **+ button**",
-                                        "Navigate to Applications and select **FluidVoice**",
-                                        "Click **Open**, then toggle **FluidVoice ON** in the list",
+                                        "Navigate to Applications and select **FluidVoice Local**",
+                                        "Click **Open**, then toggle **FluidVoice Local ON** in the list",
                                     ],
                                     warningStyle: true
                                 )
@@ -1598,7 +1598,7 @@ struct SettingsView: View {
 
             self.presentInfoAlert(
                 title: "Backup Exported",
-                message: "Saved your FluidVoice backup to:\n\(url.path)"
+                message: "Saved your FluidVoice Local backup to:\n\(url.path)"
             )
         } catch {
             self.presentErrorAlert(
@@ -1682,7 +1682,7 @@ struct SettingsView: View {
             let confirm = NSAlert()
             confirm.messageText = "Prune saved audio?"
             confirm.informativeText = """
-            This budget is below current audio usage. FluidVoice will delete the oldest saved audio first and keep transcript history.
+            This budget is below current audio usage. FluidVoice Local will delete the oldest saved audio first and keep transcript history.
             """
             confirm.alertStyle = .warning
             confirm.addButton(withTitle: "Apply and Prune")
@@ -2293,7 +2293,7 @@ struct AnalyticsConfirmationView: View {
             Text("Are you sure you want to stop sharing anonymous analytics?")
                 .font(.headline)
 
-            Text("By sharing anonymous usage data, you help us build the features you care about most. We never collect personal information (Audio, Transcription text etc), ever. Your support simply helps us make FluidVoice better for you.")
+            Text("By sharing anonymous usage data, you help us build the features you care about most. We never collect personal information (Audio, Transcription text etc), ever. Your support simply helps us make FluidVoice Local better for you.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .padding(12)

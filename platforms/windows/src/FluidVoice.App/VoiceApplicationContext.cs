@@ -45,7 +45,7 @@ internal sealed class VoiceApplicationContext : ApplicationContext
         trayIcon = new NotifyIcon
         {
             Icon = SystemIcons.Shield,
-            Text = "FluidVoice Hardened - verifying local model",
+            Text = "FluidVoice Local - verifying local model",
             ContextMenuStrip = menu,
             Visible = true
         };

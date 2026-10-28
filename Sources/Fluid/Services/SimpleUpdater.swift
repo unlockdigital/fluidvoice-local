@@ -29,7 +29,7 @@ enum SimpleUpdateError: Error, LocalizedError {
         case .codesignMismatch: return "Downloaded app’s code signature does not match current app."
         case .rollbackUnavailable: return "No rollback backup is available."
         case .rollbackRestoreFailed: return "Failed to restore a previous version."
-        case .networkDisabled: return "In-app updates are disabled in FluidVoice Hardened."
+        case .networkDisabled: return "In-app updates are disabled in FluidVoice Local."
         }
     }
 }

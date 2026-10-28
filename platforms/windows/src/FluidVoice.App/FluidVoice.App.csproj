@@ -3,13 +3,13 @@
     <OutputType>WinExe</OutputType>
     <UseWindowsForms>true</UseWindowsForms>
     <SelfContained>true</SelfContained>
-    <AssemblyName>FluidVoice Hardened</AssemblyName>
+    <AssemblyName>FluidVoice Local</AssemblyName>
     <RootNamespace>FluidVoice.Hardened.Windows</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <Version>1.2.0</Version>
     <FileVersion>1.2.0.14</FileVersion>
     <AssemblyVersion>1.2.0.0</AssemblyVersion>
-    <Product>FluidVoice Hardened for Windows</Product>
+    <Product>FluidVoice Local for Windows</Product>
     <Company>Local hardened build</Company>
   </PropertyGroup>
   <ItemGroup>

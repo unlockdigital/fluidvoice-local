@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Static hardening verification for FluidVoice Hardened.
+# Static hardening verification for FluidVoice Local.
 #
 # Scans the source tree for privacy-critical regressions. This is the "outer" static
 # gate that runs before any build or fake-data test. It grows one section per hardening
@@ -212,7 +212,7 @@ require "ModelPreseeder validates a staging copy before cache replacement" \
 require "AppDelegate invokes ModelPreseeder at launch" \
   'ModelPreseeder.preseedIfNeeded' "Sources/Fluid/AppDelegate.swift"
 require "Hardened media playback integration is a no-op" \
-  'Media auto-pause is excluded from FluidVoice Hardened' "$ASR/MediaPlaybackService.swift"
+  'Media auto-pause is excluded from FluidVoice Local' "$ASR/MediaPlaybackService.swift"
 
 if scan 'MediaRemoteAdapter|mediaremote-adapter' Fluid.xcodeproj Package.resolved Sources >/dev/null; then
   fail "MediaRemoteAdapter dependency or import remains in the hardened source"
@@ -448,7 +448,7 @@ require "Direct-input recovery identifies the live Secure Input owner" \
 require "Direct-input menu keeps recovery available during Secure Input" \
   'self\.restoreInputSourceMenuItem\?\.isEnabled = sourceState != \.restoring' "$SVC/MenuBarManager.swift"
 require "Direct-input menu names its owner recovery action" \
-  'Recover Fluid Voice\.\.\.' "$SVC/MenuBarManager.swift"
+  'Recover FluidVoice Local\.\.\.' "$SVC/MenuBarManager.swift"
 require "Direct-input recovery offers an owner-initiated normal quit" \
   'application\.terminate\(\)' "$SVC/MenuBarManager.swift"
 require "Direct-input recovery waits for Secure Input to clear before restoring" \

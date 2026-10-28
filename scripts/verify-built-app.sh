@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Post-build verification for FluidVoice Hardened.
+# Post-build verification for FluidVoice Local.
 #
 # Inspects a BUILT .app bundle (not the source tree) to confirm the hardened identity
 # actually shipped: hardened bundle id, hardened product name, no telemetry keys in the
@@ -12,13 +12,13 @@
 # the Phase 9 fake-data trial by reading the app's UserDefaults domain after first launch.
 #
 # Usage:
-#   ./scripts/verify-built-app.sh /path/to/FluidVoice\ Hardened.app
+#   ./scripts/verify-built-app.sh /path/to/FluidVoice\ Local.app
 #   ./scripts/verify-built-app.sh            # auto-discovers under ./scratchpad DerivedData / ~/Library/Developer
 #
 set -uo pipefail
 
 EXPECTED_BUNDLE_ID="${EXPECTED_BUNDLE_ID:-com.unlockdigital.FluidVoiceHardened}"
-EXPECTED_NAME_PREFIX="${EXPECTED_NAME_PREFIX:-FluidVoice Hardened}"
+EXPECTED_NAME_PREFIX="${EXPECTED_NAME_PREFIX:-FluidVoice Local}"
 
 FAIL=0
 pass() { printf "  \033[32mPASS\033[0m  %s\n" "$1"; }
@@ -26,12 +26,12 @@ fail() { printf "  \033[31mFAIL\033[0m  %s\n" "$1"; FAIL=1; }
 
 APP="${1:-}"
 if [ -z "$APP" ]; then
-  APP="$(find "$HOME/Library/Developer/Xcode/DerivedData" /tmp -name 'FluidVoice Hardened*.app' -maxdepth 8 -type d 2>/dev/null | head -1)"
+  APP="$(find "$HOME/Library/Developer/Xcode/DerivedData" /tmp -name 'FluidVoice Local*.app' -maxdepth 8 -type d 2>/dev/null | head -1)"
 fi
 
 if [ -z "$APP" ] || [ ! -d "$APP" ]; then
   echo "Built .app not found. Pass the path explicitly:"
-  echo "  ./scripts/verify-built-app.sh \"/path/to/FluidVoice Hardened.app\""
+  echo "  ./scripts/verify-built-app.sh \"/path/to/FluidVoice Local.app\""
   exit 2
 fi
 
