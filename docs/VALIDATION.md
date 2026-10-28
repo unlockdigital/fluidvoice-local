@@ -1,5 +1,9 @@
 # Source preview validation
 
+## Keyboard recovery candidate — October 28, 2026
+
+Native testing exposed a physical-typing failure in Brave and Finder with the original FluidVoice mode selected. T3 physical typing continued working. U.S. input with the runtime stopped restored all three. A clean runtime and a per-user IMK service restart reproduced the application-specific failure. The local `fix/keyboard-pass-through` branch prepares a modifier-events-only routing candidate from `e20b0b5`; its [recovery guide](KEYBOARD_RECOVERY.md) records the scope and remaining native acceptance. The original app stays preserved and the U.S. keyboard remains the operating recovery state during preparation.
+
 Validated October 27, 2026 on Apple M2 Max, 32 GB, macOS 26.5 (25F71), Xcode 26.2 (17C52). Checks used an isolated integration checkout and preserved the original source repositories and installed input method. Pinned dependency source checkouts were reused; application build intermediates were new.
 
 | Check | Result and scope |

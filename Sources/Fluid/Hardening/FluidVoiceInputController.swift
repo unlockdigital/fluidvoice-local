@@ -21,48 +21,23 @@ final class FluidVoiceInputController: IMKInputController {
     }
 
     override func recognizedEvents(_ sender: Any!) -> Int {
-        Int(
-            NSEvent.EventTypeMask.flagsChanged
-                .union(.keyDown)
-                .rawValue
-        )
+        // Ordinary typing stays with the host application's native text system.
+        Int(NSEvent.EventTypeMask.flagsChanged.rawValue)
     }
 
     override func handle(_ event: NSEvent!, client sender: Any!) -> Bool {
-        guard let event else { return false }
-        switch event.type {
-        case .keyDown:
-            // Observing key-down lets an Fn chord suppress the isolated Globe action. Returning
-            // false preserves the original event for the focused application.
-            self.modifierGestures.observeKeyDown(keyCode: event.keyCode)
-            return false
-
-        case .flagsChanged:
-            let result = self.modifierGestures.handleFlagsChanged(
-                keyCode: event.keyCode,
-                modifierFlags: event.modifierFlags
-            )
-            switch result.action {
-            case .toggleDictation:
-                DirectInputMethodBridge.shared.requestToggle()
-            case .showCharacterPalette:
-                DebugLogger.shared.info(
-                    "Direct-input Globe key requested the character palette",
-                    source: "FluidVoiceInputController"
-                )
-                DispatchQueue.main.async {
-                    // Public AppKit action; opens the system emoji and symbols interface without
-                    // Accessibility, Apple Events, synthetic input, or foreground activation.
-                    NSApp.orderFrontCharacterPalette(nil)
-                }
-            case .none:
-                break
-            }
-            return result.consumesEvent
-
-        default:
-            return false
+        guard let event, event.type == .flagsChanged else { return false }
+        let result = self.modifierGestures.handleFlagsChanged(
+            keyCode: event.keyCode,
+            modifierFlags: event.modifierFlags
+        )
+        if result.action == .toggleDictation {
+            DirectInputMethodBridge.shared.requestToggle()
         }
+        // macOS owns Globe behavior through the existing Emoji & Symbols setting.
+        // Without ordinary key-down observation, an application fallback could mistake
+        // an Fn chord for an isolated tap. Passing it through preserves native shortcuts.
+        return result.consumesEvent
     }
 
     func insertTranscript(_ text: String) {

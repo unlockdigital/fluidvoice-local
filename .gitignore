@@ -283,6 +283,7 @@ vendor/
 !models/**
 
 !scripts/test-pinned-model.py
+!scripts/test-direct-input-keyboard-routing.sh
 
 # Python fixture imports and local tooling output
 __pycache__/

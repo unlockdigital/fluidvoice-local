@@ -33,6 +33,8 @@ jobs:
         run: bash scripts/test-hardened-preference-checks.sh
       - name: Modifier gesture fixtures
         run: bash scripts/test-direct-input-modifier-gestures.sh
+      - name: Keyboard routing and IMK SDK fixtures
+        run: bash scripts/test-direct-input-keyboard-routing.sh
       - name: Model integrity fixtures
         run: python3 scripts/test-pinned-model.py
       - name: Resolve pinned packages

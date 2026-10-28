@@ -25,6 +25,7 @@ fi
 
 echo "[0/4] Verifying direct-input modifier gestures ..."
 bash "$REPO_DIR/scripts/test-direct-input-modifier-gestures.sh"
+bash "$REPO_DIR/scripts/test-direct-input-keyboard-routing.sh"
 
 echo "[1/4] Cloning verified hardened app into the input-source bundle ..."
 if [ -e "$DIRECT_APP" ]; then
