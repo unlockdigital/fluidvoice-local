@@ -1,8 +1,26 @@
 # FluidVoice Hardened
 
+<img src="assets/branding/mark.svg" width="72" height="72" alt="FluidVoice Hardened microphone and privacy shield">
+
+**Private voice input for the applications you choose.**
+
+Privacy-preserving local transcription and dictation for everyday applications, LLM prompts, coding agents and writing workflows. Speech recognition runs on your computer, with a strict processing profile that keeps cloud services, telemetry and retained dictation history disabled.
+
 FluidVoice Hardened is an independently maintained GPLv3 fork of [FluidVoice](https://github.com/altic-dev/FluidVoice), created by altic-dev and its contributors. Unlock Digital maintains a strict local-dictation profile and native Mac and Windows implementations. Original notices and [GPLv3](LICENSE) are preserved. See [provenance](PROVENANCE.md) and [third-party notices](THIRD_PARTY_NOTICES.md).
 
 The `hardened` branch is the product source branch. This is a source preview; platform acceptance and supported binary distribution are separate milestones.
+
+## Why this fork exists
+
+Voice input makes it easier to turn thoughts into useful instructions, questions, code explanations and drafts. We want that power available throughout the computer while keeping the speech-processing boundary local and understandable.
+
+This fork hardens FluidVoice around that purpose: capture speech locally, transcribe it locally, show a temporary preview and insert the final text into the application the user chooses. It preserves native desktop integration and closes features that could expand the default data, network or permission boundary. The initial hardened profile operates without cloud transcription, cloud enhancement, app telemetry or transcript/audio history.
+
+## Across applications and LLM workflows
+
+Dictate into editors, notes, browser text fields, chat interfaces and coding tools. In LLM workflows, speak a prompt or revision where you already work; the dictation tool supplies local voice-to-text input. The selected destination application controls its own storage, network and submission behavior after text insertion. Local LLM tools can keep that next step local as well.
+
+Compatibility is qualified per platform and application. Windows elevated/secure-desktop targets and Mac input-source/Secure Input behavior have explicit native limits and acceptance tests. Keep personal audio, transcripts and credentials outside shared test material.
 
 ## Platform status
 

@@ -287,3 +287,8 @@ vendor/
 # Python fixture imports and local tooling output
 __pycache__/
 *.pyc
+
+# Public community identity assets
+!assets/
+!assets/branding/
+!assets/branding/**

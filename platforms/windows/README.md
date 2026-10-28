@@ -1,10 +1,20 @@
 # FluidVoice Hardened for Windows
 
+**Private voice input for the applications you choose.**
+
+Local, privacy-preserving transcription and dictation brings spoken instructions, LLM prompts and drafts into everyday Windows applications. The hardened design keeps recognition on this computer and excludes cloud transcription, enhancement, telemetry and retained dictation history.
+
 This independently maintained Windows adaptation provides local dictation using WinForms and Whisper.net. It shares the FluidVoice name and a ported geometric mark with [altic-dev/FluidVoice](https://github.com/altic-dev/FluidVoice); this project is maintained independently. See [NOTICE](NOTICE) and [PROVENANCE.md](PROVENANCE.md) for credit, license, and source history.
 
 Press F3 to start and stop dictation; Ctrl+Alt+Space is the fallback. The overlay displays a temporary preview while recognition runs locally, and the final transcription is inserted into the original target using Unicode input. Both hotkeys must register successfully. Capture uses the default device and English. The tray menu offers dictation, privacy status, and exit.
 
 The production profile keeps audio and previews in memory, avoids clipboard output and app-authored network, telemetry, update, cloud, history, server and logging features, and checks the model hash before loading. Screen capture, accessibility software, the destination application, Windows Error Reporting, and same-user .NET diagnostics remain privacy boundaries. See [security architecture](docs/WINDOWS_SECURITY_ARCHITECTURE.md).
+
+## Why we maintain this adaptation
+
+The goal is convenient voice input across ordinary editable desktop targets with an explicit local-processing boundary. Speak into an editor, browser text field, LLM chat or coding agent while the audio-to-text step stays local. The receiving application's storage, networking and submission behavior governs the inserted text afterward. Local LLM destinations can keep that next step local too.
+
+Win32 Unicode insertion operates in the current user's ordinary desktop session. Elevated applications and secure desktops have different access boundaries; see the security architecture and qualification gates.
 
 ## Source and build
 
