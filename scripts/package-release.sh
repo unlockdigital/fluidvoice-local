@@ -14,7 +14,8 @@ set -euo pipefail
 REPO_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$REPO_DIR"
 
-DD="${DERIVED_DATA:-$REPO_DIR/build/DerivedData}"
+DD="${FLUIDVOICE_DERIVED_DATA_PATH:-${DERIVED_DATA:-$REPO_DIR/build/DerivedData}}"
+PACKAGES="${FLUIDVOICE_PACKAGE_DIRECTORY:-$REPO_DIR/build/SourcePackages}"
 OUT_DIR="$REPO_DIR/build"
 APP_NAME="FluidVoice Hardened.app"
 SIGN_ID="${SIGN_IDENTITY:--}"   # default ad-hoc; override with a Developer ID for stable perms
@@ -26,7 +27,7 @@ export SWIFTPM_MODULECACHE_OVERRIDE="$CACHE_DIR/SwiftPMModules"
 echo "[1/5] Building Release (signing identity: $SIGN_ID)..."
 xcodebuild -project Fluid.xcodeproj -scheme Fluid -configuration Release \
   -derivedDataPath "$DD" \
-  -clonedSourcePackagesDirPath "$DD/SourcePackages" \
+  -clonedSourcePackagesDirPath "$PACKAGES" \
   -packageCachePath "$CACHE_DIR/Packages" \
   -disableAutomaticPackageResolution -onlyUsePackageVersionsFromResolvedFile -skipPackageUpdates \
   CODE_SIGN_IDENTITY="$SIGN_ID" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=YES \
@@ -74,16 +75,9 @@ VENDOR="$REPO_DIR/vendor/models"
 PRESEED_DST="$APP/Contents/Resources/PreseededModels"
 MODEL_NAME="parakeet-tdt-0.6b-v2-coreml"
 
-# If the persistent daemon staged the model under ~/Library, import it into vendor/ first.
-STAGING="$HOME/Library/Application Support/FluidVoiceHardened/model-staging"
-if [ ! -d "$VENDOR/$MODEL_NAME" ] && [ -f "$STAGING/READY" ] && [ -d "$STAGING/$MODEL_NAME" ]; then
-  echo "    importing staged model from daemon ($STAGING) -> vendor/"
-  mkdir -p "$VENDOR"
-  cp -R "$STAGING/$MODEL_NAME" "$VENDOR/"
-  cp "$STAGING/$MODEL_NAME.manifest.json" "$VENDOR/" 2>/dev/null || true
-  cp "$STAGING/$MODEL_NAME.LICENSE.txt" "$VENDOR/" 2>/dev/null || true
-fi
+# Model setup is explicit and stays inside this checkout's vendor directory.
 if [ -d "$VENDOR/$MODEL_NAME" ] && [ -f "$VENDOR/$MODEL_NAME.manifest.json" ]; then
+  python3 "$REPO_DIR/scripts/fetch-pinned-model.py" --verify-only "$VENDOR/$MODEL_NAME"
   command -v jq >/dev/null 2>&1 || { echo "ERROR: jq is required to verify the offline model."; exit 1; }
   echo "    verifying vendor model against SHA-256 manifest ..."
   (
@@ -92,9 +86,16 @@ if [ -d "$VENDOR/$MODEL_NAME" ] && [ -f "$VENDOR/$MODEL_NAME.manifest.json" ]; t
   ) || { echo "ERROR: vendor model checksum verification failed."; exit 1; }
   mkdir -p "$PRESEED_DST"
   rm -rf "$PRESEED_DST/$MODEL_NAME"
-  cp -R "$VENDOR/$MODEL_NAME" "$PRESEED_DST/"
-  cp "$VENDOR/$MODEL_NAME.manifest.json" "$PRESEED_DST/"
-  [ -f "$VENDOR/$MODEL_NAME.LICENSE.txt" ] && cp "$VENDOR/$MODEL_NAME.LICENSE.txt" "$PRESEED_DST/"
+  python3 - "$VENDOR/$MODEL_NAME" "$PRESEED_DST/$MODEL_NAME" "$REPO_DIR/models/$MODEL_NAME.manifest.json" <<'PY'
+import json, pathlib, shutil, sys
+source, destination, manifest = map(pathlib.Path, sys.argv[1:])
+for name in json.loads(manifest.read_text())["files"]:
+    target = destination / name
+    target.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(source / name, target)
+PY
+  cp "$REPO_DIR/models/$MODEL_NAME.manifest.json" "$PRESEED_DST/"
+  cp "$REPO_DIR/models/$MODEL_NAME.LICENSE.txt" "$PRESEED_DST/"
   echo "    embedded $MODEL_NAME ($(du -sh "$PRESEED_DST/$MODEL_NAME" | awk '{print $1}')) + manifest + license"
 else
   echo "ERROR: required offline model unavailable ($VENDOR/$MODEL_NAME)."

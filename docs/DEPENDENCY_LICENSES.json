@@ -1,0 +1,116 @@
+[
+  {
+    "package": "AppUpdater",
+    "revision": "1b60169700489f16cfbe2feb6b1e32ca5c9464b8",
+    "license_file": "licenses/dependencies/AppUpdater-LICENSE.md",
+    "sha256": "afaf0fcac95ac7bbc93be0a339acc225f784c004d583977d0a8b9ea6452ab834"
+  },
+  {
+    "package": "DynamicNotchKit",
+    "revision": "708f31da5319436c64059ee7ae566953407063d7",
+    "license_file": "licenses/dependencies/DynamicNotchKit-LICENSE",
+    "sha256": "d088c595b3233ee06b79dc1e6d719146341fae748d1d9a22b02c65e75fa9afed"
+  },
+  {
+    "package": "FluidAudio",
+    "revision": "72625bbccf9f6c797a540a1f1cb66a4cb60753eb",
+    "license_file": "licenses/dependencies/FluidAudio-LICENSE",
+    "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+  },
+  {
+    "package": "Foundation",
+    "revision": "985f17fa69ee0e5b7eb3ff9be87ffc4e05fc0927",
+    "license_file": "licenses/dependencies/Foundation-LICENSE",
+    "sha256": "91a18e72a921d224b7bf4c83307afceb79dcaaa87e18142d7ad074f93dc35116"
+  },
+  {
+    "package": "Path.swift",
+    "revision": "8e355c28e9393c42e58b18c54cace2c42c98a616",
+    "license_file": "licenses/dependencies/Path.swift-LICENSE.md",
+    "sha256": "afaf0fcac95ac7bbc93be0a339acc225f784c004d583977d0a8b9ea6452ab834"
+  },
+  {
+    "package": "PromiseKit",
+    "revision": "8a98e31a47854d3180882c8068cc4d9381bf382d",
+    "license_file": "licenses/dependencies/PromiseKit-LICENSE",
+    "sha256": "85aa852d282e28fbb7b83d48df2ceac43e72a20cc9a8fd2b1a545037002e6d2d"
+  },
+  {
+    "package": "SwiftWhisper",
+    "revision": "a192004db08de7c6eaa169eede77f1625e7d23fb",
+    "license_file": "licenses/dependencies/SwiftWhisper-LICENSE",
+    "sha256": "f99cf12b108e496ed19b7c1704329d72289c168e6c008fda02830816346f4d90"
+  },
+  {
+    "package": "Version",
+    "revision": "200046c93f6d5d78a6d72bfd9c0b27a95e9c0a2b",
+    "license_file": "licenses/dependencies/Version-LICENSE",
+    "sha256": "c81b880198b25c9acf91f8aef55ff4dcbc9fd00405346bb460364a3119ef4f71"
+  },
+  {
+    "package": "eventsource",
+    "revision": "ca2a9d90cbe49e09b92f4b6ebd922c03ebea51d0",
+    "license_file": "licenses/dependencies/eventsource-LICENSE.md",
+    "sha256": "2f9b695627d569a3ce452b2c03fdd34310df78c8ea94edfafd9ce38381e5b502"
+  },
+  {
+    "package": "swift-asn1",
+    "revision": "9f542610331815e29cc3821d3b6f488db8715517",
+    "license_file": "licenses/dependencies/swift-asn1-LICENSE.txt",
+    "sha256": "8c6db340475136df3c1201d458fa5755698eace76e510471ecc9d857d6083dac"
+  },
+  {
+    "package": "swift-collections",
+    "revision": "6675bc0ff86e61436e615df6fc5174e043e57924",
+    "license_file": "licenses/dependencies/swift-collections-LICENSE.txt",
+    "sha256": "770af8291f708538d8ff885a0bbc4e045cd700531741c4f99528d435c14d7f55"
+  },
+  {
+    "package": "swift-crypto",
+    "revision": "fa308c07a6fa04a727212d793e761460e41049c3",
+    "license_file": "licenses/dependencies/swift-crypto-LICENSE.txt",
+    "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+  },
+  {
+    "package": "swift-huggingface",
+    "revision": "b721959445b617d0bf03910b2b4aced345fd93bf",
+    "license_file": "licenses/dependencies/swift-huggingface-LICENSE",
+    "sha256": "4d6ad72952a8329063a71de28329b493de96cf57459e2ac217110d1a6a5f84ae"
+  },
+  {
+    "package": "swift-jinja",
+    "revision": "0aeefadec459ce8e11a333769950fb86183aca43",
+    "license_file": "licenses/dependencies/swift-jinja-LICENSE",
+    "sha256": "648b81e6c6f9975c3b6cf6d630229b6c8d6f1ddaef55f5770f576adda19f3495"
+  },
+  {
+    "package": "swift-log",
+    "revision": "ce592ae52f982c847a4efc0dd881cc9eb32d29f2",
+    "license_file": "licenses/dependencies/swift-log-LICENSE.txt",
+    "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+  },
+  {
+    "package": "swift-sdk",
+    "revision": "c0407a0b52677cb395d824cac2879b963075ba8c",
+    "license_file": "licenses/dependencies/swift-sdk-LICENSE",
+    "sha256": "508a77d2e7b51d98adeed32648ad124b7b30241a8e70b2e72c99f92d8e5874d1"
+  },
+  {
+    "package": "swift-system",
+    "revision": "395a77f0aa927f0ff73941d7ac35f2b46d47c9db",
+    "license_file": "licenses/dependencies/swift-system-LICENSE.txt",
+    "sha256": "2245a990b635558be210fb3eb4f8a6f7a49aebc0fefbf5859146a65ddc7ddcf3"
+  },
+  {
+    "package": "swift-transformers",
+    "revision": "b38443e44d93eca770f2eb68e2a4d0fa100f9aa2",
+    "license_file": "licenses/dependencies/swift-transformers-LICENSE",
+    "sha256": "648b81e6c6f9975c3b6cf6d630229b6c8d6f1ddaef55f5770f576adda19f3495"
+  },
+  {
+    "package": "yyjson",
+    "revision": "8b4a38dc994a110abaec8a400615567bd996105f",
+    "license_file": "licenses/dependencies/yyjson-LICENSE",
+    "sha256": "45e384d3d52c73cba3a64d6e6c25d47cd738cd8a55c30629e3201046eda62947"
+  }
+]

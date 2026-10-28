@@ -1,0 +1,42 @@
+# Build and test outputs
+**/bin/
+**/obj/
+.artifacts/
+TestResults/
+coverage/
+
+# Machine-local SDKs and IDE state
+.tools/
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+
+# Downloaded local speech models
+vendor/models/*.bin
+vendor/models/*.gguf
+vendor/models/*.onnx
+
+# Secrets and machine-local configuration
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.pfx
+*.p12
+secrets/
+credentials/
+
+# Runtime state
+logs/
+*.log
+*.tmp
+*.dmp
+.agents/
+
+# OS metadata
+.DS_Store
+Thumbs.db
+Desktop.ini

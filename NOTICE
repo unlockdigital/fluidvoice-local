@@ -1,0 +1,9 @@
+FluidVoice Hardened is an independently maintained derivative of altic-dev/FluidVoice.
+Original FluidVoice copyright and contributor notices are retained under GNU GPL version 3.
+The owner’s local hardening and InputMethodKit additions are recorded in PROVENANCE.md.
+Windows source and its FluidVoice-derived mark carry their own attribution and independent
+source-origin record in platforms/windows/NOTICE and platforms/windows/PROVENANCE.md.
+
+Third-party libraries and model material retain their original licenses and ownership.
+See THIRD_PARTY_NOTICES.md and licenses/. The derivative project’s name identifies its
+relationship to FluidVoice; independent maintenance is stated explicitly.

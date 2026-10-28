@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="src/FluidVoice.Core/FluidVoice.Core.csproj" />
+  <Project Path="src/FluidVoice.App/FluidVoice.App.csproj" />
+  <Project Path="src/FluidVoice.Verify/FluidVoice.Verify.csproj" />
+</Solution>

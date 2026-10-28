@@ -1,0 +1,21 @@
+# Canonical repository text uses LF for clean Windows/macOS handoff.
+* text=auto eol=lf
+
+# Native Windows command files retain CRLF.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Never apply text conversion to binary artifacts.
+*.ico binary
+*.jpg binary
+*.jpeg binary
+*.png binary
+*.gif binary
+*.webp binary
+*.wav binary
+*.mp3 binary
+*.mp4 binary
+*.zip binary
+*.7z binary
+*.exe binary
+*.dll binary

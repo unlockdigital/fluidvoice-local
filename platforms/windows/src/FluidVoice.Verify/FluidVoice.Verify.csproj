@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>FluidVoice.Verify</AssemblyName>
+    <RootNamespace>FluidVoice.Hardened.Verify</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../FluidVoice.Core/FluidVoice.Core.csproj" />
+  </ItemGroup>
+</Project>

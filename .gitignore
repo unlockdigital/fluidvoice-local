@@ -277,3 +277,13 @@ vendor/
 !scripts/build-hardened.sh
 !scripts/check-macos27-readiness.sh
 !scripts/fixtures/MacOS27Readiness.swift
+
+!scripts/fetch-pinned-model.py
+!models/
+!models/**
+
+!scripts/test-pinned-model.py
+
+# Python fixture imports and local tooling output
+__pycache__/
+*.pyc

@@ -1,0 +1,152 @@
+[
+  {
+    "origin_commit": "e6659f1bd49ee4f49a8467242c4c19dee8f8b62b",
+    "author_date": "2026-06-23T15:18:40-05:00",
+    "author": "FluidVoice Hardened",
+    "subject": "Baseline: import altic-dev/FluidVoice @ fba0d31 + hardening docs"
+  },
+  {
+    "origin_commit": "7bc66750955a88cf5abbe96803eaa3e1346e2958",
+    "author_date": "2026-06-23T15:34:27-05:00",
+    "author": "FluidVoice Hardened",
+    "subject": "Phase 1: hardened app identity and storage scoping"
+  },
+  {
+    "origin_commit": "2675cd24483f0095784dd064a522c1305457dc5c",
+    "author_date": "2026-06-23T15:34:35-05:00",
+    "author": "FluidVoice Hardened",
+    "subject": "Phase 2: telemetry removal and update hardening"
+  },
+  {
+    "origin_commit": "4824b3407db74b9c6e3348f008b543bc87d966d5",
+    "author_date": "2026-06-23T15:34:45-05:00",
+    "author": "FluidVoice Hardened",
+    "subject": "Repo: track hardened docs and verification tooling"
+  },
+  {
+    "origin_commit": "f25b351675a7fce77eec68a57d588d7c26cf1fe2",
+    "author_date": "2026-06-23T15:53:32-05:00",
+    "author": "FluidVoice Hardened",
+    "subject": "Phase 3a: disabled logging suppresses all file/stdout/UI writes"
+  },
+  {
+    "origin_commit": "ea9d89220b635eafc639cdcae7b255325dad0b43",
+    "author_date": "2026-06-23T15:53:47-05:00",
+    "author": "FluidVoice Hardened",
+    "subject": "Phase 3b: sanitize log sites to metadata/length only (no private content)"
+  },
+  {
+    "origin_commit": "1febfb20858debc413104983b98c3447493fff9e",
+    "author_date": "2026-06-23T15:53:47-05:00",
+    "author": "FluidVoice Hardened",
+    "subject": "Phase 3c: extend verification (logging scans + built-app check)"
+  },
+  {
+    "origin_commit": "96fc1cf3ffae8fd026874bab24e02d1d187b1e4a",
+    "author_date": "2026-06-23T15:54:17-05:00",
+    "author": "FluidVoice Hardened",
+    "subject": "docs: record tracked follow-ups (entitlements, cache integrity, Apple Speech, reset caveat)"
+  },
+  {
+    "origin_commit": "8594222a4f448732520c8bfff1dff521b03a75b0",
+    "author_date": "2026-06-23T16:11:57-05:00",
+    "author": "FluidVoice Hardened",
+    "subject": "Phase 3 fix: repair verifier (was vacuous) + close remaining log leaks"
+  },
+  {
+    "origin_commit": "3b4994d8e04587531d787b09a5cd30a39872019e",
+    "author_date": "2026-06-23T16:18:58-05:00",
+    "author": "FluidVoice Hardened",
+    "subject": "Phase 4: history off by default with store-level fail-closed guards"
+  },
+  {
+    "origin_commit": "fd6551997921239b2d074021527e0f14e87191cc",
+    "author_date": "2026-06-23T16:26:31-05:00",
+    "author": "FluidVoice Hardened",
+    "subject": "Phase 5: local ASR only \u2014 Apple Speech unreachable under HARDENED"
+  },
+  {
+    "origin_commit": "29bcda471f1fcea50e15fd377459c9f8e6639f1f",
+    "author_date": "2026-06-23T16:35:12-05:00",
+    "author": "FluidVoice Hardened",
+    "subject": "Phase 6: local post-processing only via allowCloudProviders toggle (default OFF)"
+  },
+  {
+    "origin_commit": "c96967e0fb9b94ce31a2a13031be0b84fa786c1f",
+    "author_date": "2026-06-23T16:38:17-05:00",
+    "author": "FluidVoice Hardened",
+    "subject": "Phase 7: Command Mode disabled with shell-exec hard guard"
+  },
+  {
+    "origin_commit": "93e07226b9d2b52de06913cb47942aa364a915bf",
+    "author_date": "2026-06-23T16:40:38-05:00",
+    "author": "FluidVoice Hardened",
+    "subject": "Phase 8: Local API disabled (no-op server under HARDENED)"
+  },
+  {
+    "origin_commit": "1e75978a5b38dc4bb49d0b44cce520ccfb070507",
+    "author_date": "2026-06-23T16:46:14-05:00",
+    "author": "FluidVoice Hardened",
+    "subject": "Phase 9: runtime-check script + finalized test plan (live trial pending)"
+  },
+  {
+    "origin_commit": "17a4696af17d89638c12c8b919c8c39652cf718b",
+    "author_date": "2026-06-23T18:20:20-05:00",
+    "author": "FluidVoice Hardened",
+    "subject": "Fix Release packaging: embed MediaRemoteAdapter.framework + deep re-sign"
+  },
+  {
+    "origin_commit": "6018fa9cab223a4af5ed99c10e2ac5e6cbb71890",
+    "author_date": "2026-06-23T19:15:00-05:00",
+    "author": "FluidVoice Hardened",
+    "subject": "Fix: validate real model artifacts (empty FluidAudio dir no longer 'installed')"
+  },
+  {
+    "origin_commit": "39b5bc0ae675d829dcd288ad2e93bbeceb1ea4ae",
+    "author_date": "2026-06-23T20:02:33-05:00",
+    "author": "FluidVoice Hardened",
+    "subject": "Offline model bundling: no-token preseed of Parakeet TDT v2"
+  },
+  {
+    "origin_commit": "52c836718672c59a5b3f75c54563810632a6ddf3",
+    "author_date": "2026-06-23T20:12:07-05:00",
+    "author": "FluidVoice Hardened",
+    "subject": "Hardened: fail-closed offline-only ASR (no auto Hugging Face download)"
+  },
+  {
+    "origin_commit": "a8359ee6d0393f4887fdf9fc307a1634845a8f8e",
+    "author_date": "2026-06-23T20:33:06-05:00",
+    "author": "FluidVoice Hardened",
+    "subject": "Persistent (TCC-safe) model-fetch daemon surviving session/restarts"
+  },
+  {
+    "origin_commit": "710288c489506ae973f799af69dee43286ed4410",
+    "author_date": "2026-06-23T20:33:17-05:00",
+    "author": "FluidVoice Hardened",
+    "subject": "gitignore .claude/ local session state"
+  },
+  {
+    "origin_commit": "9aad936290a30b84a853bea6e6ca68362bb40578",
+    "author_date": "2026-07-21T20:04:51-05:00",
+    "author": "unlockdigital",
+    "subject": "Harden FluidVoice local-only security boundary"
+  },
+  {
+    "origin_commit": "aa142cb14cb82162186bb162ea5bc2ccf4e23698",
+    "author_date": "2026-07-21T21:10:42-05:00",
+    "author": "unlockdigital",
+    "subject": "Remove dynamic media adapter from hardened build"
+  },
+  {
+    "origin_commit": "0ae4daefffeb43afee1287f1c320298c06c6b752",
+    "author_date": "2026-07-21T21:29:10-05:00",
+    "author": "unlockdigital",
+    "subject": "Make offline model preseeding atomic and complete"
+  },
+  {
+    "origin_commit": "7f4850cc61ca3594e552031cfe38e240b914bb1f",
+    "author_date": "2026-07-21T23:55:54-05:00",
+    "author": "unlockdigital",
+    "subject": "Add least-privilege direct input method"
+  }
+]
