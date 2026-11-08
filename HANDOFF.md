@@ -4,6 +4,8 @@ This community fork preserves the owner's local-first Mac implementation on real
 
 The working installations remain separate preservation anchors. New builds belong in build/ or another isolated output path. Keep runtime permission and input-source state preserved while developing.
 
+The November 8 consolidation verified the owner-confirmed standalone app at `~/Applications/FluidVoice Hardened.app` against its signed recovery ledger. That working route uses its matching Accessibility authorization and the U.S. keyboard; the InputMethodKit guardian remains disabled. Preserve this installation and its external recovery anchors while qualifying Direct Input separately. The single source checkout is `~/Documents/CODEX/FLUIDVOICE-LOCAL`; [the consolidation assessment](docs/REPOSITORY_CONSOLIDATION.md) records retained branches, models and private recovery material.
+
 The Mac Direct Input path uses Right Option press/release to toggle dictation, local Parakeet ASR and IMKTextInput insertion. The signed direct-input capability is microphone input only. Preserve disabled Accessibility/Input Monitoring/Apple Events paths and the external-network/history/content-log/cloud/Command Mode/Local API boundary.
 
 The live transcription UI uses the original horizontal FluidVoice panel. Preserve LSUIElement=true, the nonactivating panel route and guardian open -g behavior. Hidden launch with -j suppresses the panel.

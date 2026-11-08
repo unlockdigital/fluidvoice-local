@@ -293,3 +293,6 @@ __pycache__/
 !assets/
 !assets/branding/
 !assets/branding/**
+
+# Private consolidation archives, inventories and local recovery evidence.
+/.local/

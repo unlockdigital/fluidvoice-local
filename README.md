@@ -10,6 +10,8 @@ FluidVoice Local is an independently maintained GPLv3 fork of [FluidVoice](https
 
 The `hardened` branch is the product source branch. This is a source preview; platform acceptance and supported binary distribution are separate milestones.
 
+The canonical local checkout is `~/Documents/CODEX/FLUIDVOICE-LOCAL`. Its local `hardened` branch includes the keyboard pass-through recovery source. The stop-target/caption candidate and earlier hardening history remain preserved on branches in this repository. [Repository assessment and consolidation](docs/REPOSITORY_CONSOLIDATION.md) records their status, local recovery material and the protected working standalone installation.
+
 Canonical repository: [unlockdigital/fluidvoice-local](https://github.com/unlockdigital/fluidvoice-local). The project adopted the FluidVoice Local name on October 28, 2026. [Naming and compatibility](docs/BRANDING.md) explains the stable installation identifiers and preserved historical records.
 
 ## Why this fork exists

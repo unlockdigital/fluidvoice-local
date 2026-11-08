@@ -15,3 +15,7 @@ The repair candidate requires physical typing and deletion in T3, Brave and Find
 The source passed the routing fixtures, real SDK typecheck, existing modifier fixtures, static hardening and Release/offline app build checks. Independent review found no blocking issue before a controlled trial. Direct-input packaging and native acceptance of this repair remain pending.
 
 For operational recovery, the owner confirmed Brave and Finder typing after the original input-method bundle was preserved outside the active Input Methods directory, owned test registrations were removed and automatic recovery was disabled. The current recovery state uses U.S. input with zero FluidVoice modes in the active catalog. Dictation remains paused. This restores physical typing while the source repair awaits qualification.
+
+## Preserved standalone operating route
+
+Later on October 28, the owner confirmed the standalone app and hotkey working with U.S. input and the matching Accessibility grant. November 8 read-only checks found that same executable running and matching the signed recovery ledger. The InputMethodKit guardian remains disabled. Keep that standalone installation preserved while qualifying the Direct Input source candidate. [The repository consolidation assessment](REPOSITORY_CONSOLIDATION.md) records the single source location and retained recovery material.
