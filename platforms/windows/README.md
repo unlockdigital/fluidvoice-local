@@ -2,6 +2,8 @@
 
 **Private voice input for the applications you choose.**
 
+Start with [Windows setup and use](../../docs/WINDOWS.md) for the build, installation and dictation process. [Project home](../../README.md) links both platforms; the [Mac guide](../../docs/MACOS.md) covers its separate native route.
+
 Local, privacy-preserving transcription and dictation brings spoken instructions, LLM prompts and drafts into everyday Windows applications. The hardened design keeps recognition on this computer and excludes cloud transcription, enhancement, telemetry and retained dictation history.
 
 The [FluidVoice Local repository](https://github.com/unlockdigital/fluidvoice-local) includes this independently maintained Windows adaptation. It provides local dictation using WinForms and Whisper.net. It shares the FluidVoice name and a ported geometric mark with [altic-dev/FluidVoice](https://github.com/altic-dev/FluidVoice); this project is maintained independently. See [NOTICE](NOTICE) and [PROVENANCE.md](PROVENANCE.md) for credit, license, and source history.
