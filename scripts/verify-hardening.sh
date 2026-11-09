@@ -354,13 +354,13 @@ require "Direct input skips command-history initialization" \
   'guard DirectInputMethodRuntime\.isEnabled == false else \{ return \}' "$SVC/CommandModeService.swift"
 require "Direct hotkey consumes a complete Right Option press" \
   'toggleDictation, consumesEvent: true' "Sources/Fluid/Hardening/DirectInputModifierGestureTracker.swift"
-require "Direct input observes key-down only to distinguish Globe/Fn chords" \
-  '\.union\(\.keyDown\)' "Sources/Fluid/Hardening/FluidVoiceInputController.swift"
-require "Direct input restores the system character palette for an isolated Globe tap" \
-  'NSApp\.orderFrontCharacterPalette\(nil\)' "Sources/Fluid/Hardening/FluidVoiceInputController.swift"
+require "Direct input requests modifier changes only" \
+  'Int\(NSEvent\.EventTypeMask\.flagsChanged\.rawValue\)' "Sources/Fluid/Hardening/FluidVoiceInputController.swift"
+require "Direct input rejects ordinary key events before gesture handling" \
+  'event\.type == \.flagsChanged else \{ return false \}' "Sources/Fluid/Hardening/FluidVoiceInputController.swift"
 require "Globe/Fn remains a pass-through system gesture" \
   'showCharacterPalette, consumesEvent: false' "Sources/Fluid/Hardening/DirectInputModifierGestureTracker.swift"
-require "Globe/Fn chords suppress the isolated palette gesture" \
+require "Shared modifier tracker retains Globe/Fn chord classification" \
   'globeWasCombined' "Sources/Fluid/Hardening/DirectInputModifierGestureTracker.swift"
 require "Globe action helper uses the macOS Text Input Services setting" \
   'TISUpdateFnUsageType\(emojiAndSymbolsUsageType\)' "scripts/configure-globe-key.swift"

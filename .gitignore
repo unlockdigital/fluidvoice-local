@@ -283,6 +283,7 @@ vendor/
 !models/**
 
 !scripts/test-pinned-model.py
+!scripts/test-direct-input-keyboard-routing.sh
 
 # Python fixture imports and local tooling output
 __pycache__/
@@ -292,3 +293,6 @@ __pycache__/
 !assets/
 !assets/branding/
 !assets/branding/**
+
+# Private consolidation archives, inventories and local recovery evidence.
+/.local/

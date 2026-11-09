@@ -2,83 +2,34 @@
 
 <img src="assets/branding/mark.svg" width="72" height="72" alt="FluidVoice Local microphone and privacy shield">
 
-**Private voice input for the applications you choose.**
+**Private voice input for Mac and Windows.**
 
-Privacy-preserving local transcription and dictation for everyday applications, LLM prompts, coding agents and writing workflows. Speech recognition runs on your computer, with a strict processing profile that keeps cloud services, telemetry and retained dictation history disabled.
+Speak into editors, notes, browser fields and coding tools. FluidVoice Local transcribes speech on your computer and inserts the text into the application you choose. Cloud processing, telemetry and retained dictation history stay disabled. The receiving application controls how it stores and sends the inserted text.
 
-FluidVoice Local is an independently maintained GPLv3 fork of [FluidVoice](https://github.com/altic-dev/FluidVoice), created by altic-dev and its contributors. Unlock Digital maintains a strict local-dictation profile and native Mac and Windows implementations. Original notices and [GPLv3](LICENSE) are preserved. See [provenance](PROVENANCE.md) and [third-party notices](THIRD_PARTY_NOTICES.md).
+Maintained by Unlock Digital at **[unlockdigital/fluidvoice-local](https://github.com/unlockdigital/fluidvoice-local)**. The `main` branch contains both native implementations.
 
-The `hardened` branch is the product source branch. This is a source preview; platform acceptance and supported binary distribution are separate milestones.
+## Choose your platform
 
-Canonical repository: [unlockdigital/fluidvoice-local](https://github.com/unlockdigital/fluidvoice-local). The project adopted the FluidVoice Local name on October 28, 2026. [Naming and compatibility](docs/BRANDING.md) explains the stable installation identifiers and preserved historical records.
-
-## Why this fork exists
-
-Voice input makes it easier to turn thoughts into useful instructions, questions, code explanations and drafts. We want that power available throughout the computer while keeping the speech-processing boundary local and understandable.
-
-This fork hardens FluidVoice around that purpose: capture speech locally, transcribe it locally, show a temporary preview and insert the final text into the application the user chooses. It preserves native desktop integration and closes features that could expand the default data, network or permission boundary. The initial hardened profile operates without cloud transcription, cloud enhancement, app telemetry or transcript/audio history.
-
-## Across applications and LLM workflows
-
-Dictate into editors, notes, browser text fields, chat interfaces and coding tools. In LLM workflows, speak a prompt or revision where you already work; the dictation tool supplies local voice-to-text input. The selected destination application controls its own storage, network and submission behavior after text insertion. Local LLM tools can keep that next step local as well.
-
-Compatibility is qualified per platform and application. Windows elevated/secure-desktop targets and Mac input-source/Secure Input behavior have explicit native limits and acceptance tests. Keep personal audio, transcripts and credentials outside shared test material.
-
-## Platform status
-
-| Platform | Implementation | Current status |
+| | Mac | Windows |
 | --- | --- | --- |
-| Apple Silicon / macOS 26 | Native Swift, local Parakeet v2, InputMethodKit direct insertion and Right Option toggle | Preserved working source; public Release build and deterministic checks verified on M2 Max. New physical candidate acceptance remains pending |
-| Windows x64 | Independent C# WinForms adaptation, local Whisper, Win32 hotkeys and Unicode insertion | [Source imported with independent provenance and GPLv3 licensing](platforms/windows/README.md). Runtime upgrade, test-harness repair and host acceptance remain open |
-| macOS 27 / M5 | Separate qualification track for this fork | [Read-only probe and acceptance guide](docs/MACOS_27_QUALIFICATION.md). The supplied M5 package was public reference/configuration evidence; actual installed source remains unknown |
+| Source | Swift · Apple Silicon | C# / WinForms · Windows x64 |
+| Local recognition | Parakeet v2 | Whisper large-v3-turbo |
+| Dictation control | Right Option in the Direct Input candidate | F3; Ctrl+Alt+Space fallback |
+| Text insertion | InputMethodKit | Win32 Unicode input |
+| Start here | **[Mac setup and use](docs/MACOS.md)** | **[Windows setup and use](docs/WINDOWS.md)** |
 
-## Privacy profile
+**Current status: source preview.** Source checks and build evidence are recorded in [validation](docs/VALIDATION.md). Fresh Mac Direct Input acceptance and Windows runtime, logic-harness and host qualification remain open. Supported binary distribution is a separate milestone. Existing working installations remain preservation anchors during candidate development.
 
-The Mac hardened build selects local Parakeet transcription and enforces disabled telemetry, cloud ASR/enhancement, content logs, transcript/audio history, Command Mode, the Local API and update checks. Prompt/rewrite and AI enhancement paths remain off. The direct-input bundle uses InputMethodKit and microphone-only signed capability, preserving the original horizontal live-text panel. Dependencies and model setup use network access during explicit preparation; runtime model acquisition fails closed.
+## Documentation
 
-The [Windows subtree](platforms/windows/docs/WINDOWS_SECURITY_ARCHITECTURE.md) documents its separate native boundary. OS crash handling, runtime diagnostics, on-screen text and the destination application remain part of the threat model. Source scans and fixture tests support specific checks; physical privacy acceptance requires the native release matrix.
+- [Mac setup and use](docs/MACOS.md) — requirements, build, models, installation boundaries and dictation.
+- [Windows setup and use](docs/WINDOWS.md) — requirements, build, models, installation, firewall coverage and dictation.
+- [Build and packaging reference](docs/BUILDING.md) · [Model attribution](models/README.md).
+- [Validation and remaining work](docs/VALIDATION.md) · [Keyboard recovery](docs/KEYBOARD_RECOVERY.md) · [macOS 27 qualification](docs/MACOS_27_QUALIFICATION.md).
+- [Contributing](CONTRIBUTING.md) · [Maintainer handoff](HANDOFF.md) · [Repository consolidation](docs/REPOSITORY_CONSOLIDATION.md).
 
-## Build the Mac source
+## Credit and license
 
-Use an Apple Silicon Mac with full Xcode 26.2 and its command-line tools selected. Dependency revisions are recorded in the identical root and Xcode `Package.resolved` files. The Xcode app-bundle route is the supported build entrypoint. `Package.swift` describes the same dependency pins and source path; it is not the distribution bundle route.
+FluidVoice Local is an independently maintained GPLv3 fork of [FluidVoice](https://github.com/altic-dev/FluidVoice), created by altic-dev and its contributors. The Windows adaptation has its own [source provenance](platforms/windows/PROVENANCE.md) and [notices](platforms/windows/NOTICE).
 
-```sh
-./build.sh resolve
-./build.sh unsigned
-```
-
-`./build.sh` uses ad-hoc signing by default; `SIGN_IDENTITY` can select an authorized local identity. Builds stay under `build/` and are never launched or installed by this command. A compile-only app does not yet contain the offline model. See [build and packaging](docs/BUILDING.md).
-
-## Verification
-
-```sh
-bash scripts/verify-hardening.sh
-bash scripts/test-hardened-network-policy.sh
-bash scripts/test-hardened-preference-checks.sh
-bash scripts/test-direct-input-modifier-gestures.sh
-python3 scripts/test-pinned-model.py
-```
-
-These use synthetic fixtures and isolated outputs. The preference fixture writes a temporary test domain instead of the live app domain. [Validation and remaining gates](docs/VALIDATION.md) distinguishes source checks, builds, packaging and physical acceptance.
-
-## Offline model and packaging
-
-The approved CoreML model is [FluidInference Parakeet TDT v2](https://huggingface.co/FluidInference/parakeet-tdt-0.6b-v2-coreml), based on NVIDIA Parakeet and converted by FluidInference under CC BY 4.0. This repository includes its approved 55-file hash manifest and an immutable source revision, while weights stay excluded from Git.
-
-```sh
-# Explicit setup window; downloads approximately 2.6 GB into vendor/.
-./scripts/fetch-parakeet-model.sh
-# Build separate offline-ready artifacts; these commands do not install them.
-./scripts/package-release.sh
-./scripts/package-direct-input-method.sh
-```
-
-A separately supplied model can be checked with `python3 scripts/fetch-pinned-model.py --verify-only /path/to/model`. The fetch uses curl and Python's standard library, an immutable revision and committed SHA-256 values. It preserves an invalid existing destination and reports failure. Packaging copies only the approved files. [Model attribution and source](models/README.md) records the revision.
-
-## Installation and compatibility
-
-Keep a working installation preserved while validating a new candidate. Read [HANDOFF.md](HANDOFF.md), [build/installation boundaries](docs/BUILDING.md) and the [macOS 27 guide](docs/MACOS_27_QUALIFICATION.md) first. The current compatibility helper accepts macOS 26 only. Installation scripts alter input-source registration, keyboard/startup state and the per-user bundle; use a scoped trial with a verified rollback artifact. No supported binary release is published from this source preview.
-
-## Contributing
-
-Use [CONTRIBUTING.md](CONTRIBUTING.md). Focused reusable fixes can also be proposed to [FluidVoice upstream](https://github.com/altic-dev/FluidVoice/blob/main/CONTRIBUTING.md) after current-upstream reproduction and its issue/discussion requirements. Keep platform privacy and provenance boundaries explicit.
+[GPLv3](LICENSE) · [Project provenance](PROVENANCE.md) · [Third-party notices](THIRD_PARTY_NOTICES.md) · [Naming and compatibility](docs/BRANDING.md).
