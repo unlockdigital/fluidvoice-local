@@ -6,7 +6,7 @@
 
 Speak into editors, notes, browser fields and coding tools. FluidVoice Local transcribes speech on your computer and inserts the text into the application you choose. Cloud processing, telemetry and retained dictation history stay disabled. The receiving application controls how it stores and sends the inserted text.
 
-Maintained by Unlock Digital at **[unlockdigital/fluidvoice-local](https://github.com/unlockdigital/fluidvoice-local)**. The `hardened` branch contains both native implementations.
+Maintained by Unlock Digital at **[unlockdigital/fluidvoice-local](https://github.com/unlockdigital/fluidvoice-local)**. The `main` branch contains both native implementations.
 
 ## Choose your platform
 

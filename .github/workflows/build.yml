@@ -2,16 +2,16 @@ name: FluidVoice Local source checks
 
 on:
   push:
-    branches: [hardened]
+    branches: [main]
   pull_request:
-    branches: [hardened]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: hardened-${{ github.ref }}
+  group: source-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:

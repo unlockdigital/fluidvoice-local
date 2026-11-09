@@ -12,7 +12,7 @@ Preferred phrases include local speech recognition, privacy-preserving dictation
 
 ## Naming and compatibility
 
-The canonical repository is [unlockdigital/fluidvoice-local](https://github.com/unlockdigital/fluidvoice-local), and the local community checkout is named `FLUIDVOICE-LOCAL`. The maintained branch remains `hardened`, describing its processing profile. The project adopted FluidVoice Local on October 28, 2026; earlier source snapshots, commit authors and validation records retain their historical names.
+The canonical repository is [unlockdigital/fluidvoice-local](https://github.com/unlockdigital/fluidvoice-local), and the local community checkout is named `FLUIDVOICE-LOCAL`. The maintained branch is `main`; its hardened processing profile and compatibility identifiers remain in place. The project adopted FluidVoice Local on October 28, 2026; earlier source snapshots, commit authors and validation records retain their historical names.
 
 New Mac products use `FluidVoice Local.app` and the display name `FluidVoice Local Direct Input`. The packaged input method is `build/FluidVoice Local Direct Input.app`. Its established installation location remains `~/Library/Input Methods/FluidVoice Direct Input.app`, keeping the guardian and registration route consistent. Bundle/input-source IDs, preference domains, Keychain services and private storage directories retain their existing `FluidVoiceHardened` identities. These technical values preserve permission and state continuity. A later installation trial still requires the documented preservation and physical acceptance procedure.
 

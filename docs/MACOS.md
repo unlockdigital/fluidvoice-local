@@ -20,7 +20,7 @@ The activation compatibility helper currently accepts macOS 26. Follow the separ
 Clone into a fresh development directory, or use your existing canonical checkout:
 
 ```sh
-git clone --branch hardened https://github.com/unlockdigital/fluidvoice-local.git
+git clone --branch main https://github.com/unlockdigital/fluidvoice-local.git
 cd fluidvoice-local
 ./build.sh resolve
 ./build.sh unsigned

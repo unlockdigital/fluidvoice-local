@@ -18,7 +18,7 @@ This is experimental source. Runtime migration, logic-harness repair and fresh W
 Use a fresh development checkout to preserve existing installations, models and build artifacts:
 
 ```powershell
-git clone --branch hardened https://github.com/unlockdigital/fluidvoice-local.git
+git clone --branch main https://github.com/unlockdigital/fluidvoice-local.git
 Set-Location fluidvoice-local\platforms\windows
 .\scripts\Get-BuildDependencies.ps1
 .\scripts\Build-FluidVoice.ps1

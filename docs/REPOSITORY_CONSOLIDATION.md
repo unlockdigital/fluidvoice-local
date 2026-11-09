@@ -1,6 +1,6 @@
 # FluidVoice repository consolidation — November 8, 2026
 
-The canonical local source repository is ~/Documents/CODEX/FLUIDVOICE-LOCAL, with origin https://github.com/unlockdigital/fluidvoice-local.git and upstream https://github.com/altic-dev/FluidVoice.git. The local hardened branch contains the keyboard pass-through repair and this consolidation record. Remote branches retain their existing state.
+The canonical local source repository is ~/Documents/CODEX/FLUIDVOICE-LOCAL, with origin https://github.com/unlockdigital/fluidvoice-local.git and upstream https://github.com/altic-dev/FluidVoice.git. The initial consolidation advanced local `hardened` with the keyboard pass-through repair and this record. The subsequent source review prepares `main` as the single maintained public branch, with Mac and Windows setup guides and matching CI triggers. Historical branch names below describe the consolidation inputs.
 
 ## Assessment and retained work
 
@@ -49,4 +49,3 @@ All six deterministic checks passed during preparation:
 Repository/file checks verify original archives, retained refs and legacy commits, unchanged production source against the keyboard-repair tree, the moved model payload and a single final Git worktree. Local Git object checks use the existing promisor configuration.
 
 This work performs source and filesystem consolidation. New app builds, installation replacement, microphone trials and physical dictation/keyboard acceptance remain separate scoped work. The keyboard repair and stop-target/caption candidate retain their documented native acceptance gates.
-
